@@ -1,0 +1,600 @@
+#+TITLE: Symbolic Data
+
+* Pre
+** Filter
+#+name:filter
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (filter predicate sequence)
+    (cond ((null? sequence) nil)
+          ((predicate (car sequence)) (cons (car sequence) (filter predicate (cdr sequence))))
+          (else (filter predicate (cdr sequence)))))
+#+end_src
+
+#+RESULTS:
+: (1 3 5)
+
+** Accumulate
+#+name:accumulate
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (accumulate op initial seq)
+    (if (null? seq) initial (op (car seq) (accumulate op initial (cdr seq)))) )
+#+end_src
+
+** Enumerate
+#+name:enumerate-interval
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (enumerate-interval low high)
+    (if (> low high) nil (cons low (enumerate-interval (inc low) high))))
+#+end_src
+
+#+name:enumerate-tree
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (enumerate-tree tree)
+    (cond ((null? tree) nil)
+          ((not (pair? tree)) (list tree))
+          (else (append (enumerate-tree (car tree)) (enumerate-tree (cdr tree))))
+          ))
+#+end_src
+
+** pre-requistes
+#+NAME:prime
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (square x) (* x x))
+  (define (smallest-divisor n) (find-divisor n 2))
+  (define (find-divisor n test-divisor)
+    (cond ((> (square test-divisor) n) n)
+          ((divides? test-divisor n) test-divisor)
+          (else (find-divisor n (+ test-divisor 1 )))))
+  (define (divides? a b) (= (remainder b a) 0))
+
+  (define (prime? n)
+    (and (not (= n 1)) (= n (smallest-divisor n))))
+#+end_src
+
+#+NAME:fib
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (fib n)
+    (cond ((= n 0) 0)
+          ((= n 1) 1)
+          (else (+
+                 (fib (- n 1))
+                 (fib (- n 2))))))
+#+end_src
+
+#+NAME:square
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (square x) (* x x))
+#+end_src
+
+#+NAME:gcd
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (gcd a b)
+    (if (= b 0)
+        a
+        (gcd b (remainder a b))))
+#+end_src
+
+#+NAME:average
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (average a b) (/ (+ a b) 2))
+#+end_src
+
+#+NAME:pow
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (pow x n)
+    (if (= n 1)
+        x
+        (* x (pow x (dec n)))))
+#+end_src
+** Test 
+#+begin_src racket :lang sicp :results output
+#+end_src
+
+#+RESULTS:
+: #f
+
+
+* 2.3.1 Quatation
+** test
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (eq? b b)
+#+end_src
+
+#+RESULTS:
+: /var/folders/_3/nwly65x92d13qp765t5gqbl40000gn/T/babel-iGMezq/org-babel-d85Kvq.rkt:4:5: b: unbound identifier
+:   in: b
+:   location...:
+:    /var/folders/_3/nwly65x92d13qp765t5gqbl40000gn/T/babel-iGMezq/org-babel-d85Kvq.rkt:4:5
+
+** Exercise 2.53
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (list 'a 'b 'c)
+  (list (list 'george))
+  (cdr '((x1 x2) (y1 y2)))
+  (cadr '((x1 x2) (y1 y2)))
+  (pair? (car '(a short list)))
+  (memq 'red '((red shoes) (blue socks)))
+  (memq 'red '(red shoes blue socks))
+#+end_src
+
+#+RESULTS:
+: (a b c)
+: ((george))
+: ((y1 y2))
+: (y1 y2)
+: #f
+: #f
+: (red shoes blue socks)
+
+** Exercise 2.54
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+    <<accumulate>>
+    (define (equal? a b)
+      (cond ((and (null? a) (null? b)) true)
+            ((or (null? a) (null? b)) false)
+            ((and (symbol? a) (symbol? b)) (eq? a b))
+            ((and (list? a) (list? b)) (and (equal? (car a) (car b)) (equal? (cdr a) (cdr b))))
+            ((and (number? a) (number? b)) (= a b))
+            (else false)
+            ))
+
+    (equal? '() '())
+    (equal? '() 'a)
+
+    (equal? '((x1 x2) (y1 y2)) '((x1 x2) (y1 y2)))
+   (equal? '((x1 x2) (y1 y2)) '((x1 x2 x3) (y1 y2)))
+   (equal? '(x1 x2) 'y1)
+   (equal? 'abc 'abc)
+  (equal? 123 123)
+
+
+
+#+end_src
+
+#+RESULTS:
+: #t
+: #f
+: #t
+: #f
+: #f
+: #t
+: #t
+
+** Exercise 2.55
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (car ''abracadabra)
+  (equal? ''abracadabra (quote (quote abracadabra)))
+#+end_src
+
+#+RESULTS:
+: quote
+: #t
+
+
+** Exercise snippet
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+#+end_src
+
+
+* 2.3.2 Symbolic Differentiation
+** Pre
+#+name:deriv-pre
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (variable? x) (symbol? x))
+  (define (same-variable? v1 v2)
+    (and (variable? v1) (variable? v2) (eq? v1 v2)))
+
+  (define (make-sum a1 a2) (cond ((=number? a1 0) a2)
+                                 ((=number? a2 0) a1)
+                                 ((and (number? a1) (number? a2))
+                                  (+ a1 a2))
+                                 (else (list '+ a1 a2))))
+
+  (define (=number? exp num) (and (number? exp) (= exp num)))
+
+  (define (make-product m1 m2)
+    (cond ((or (=number? m1 0) (=number? m2 0)) 0)
+          ((=number? m1 1) m2)
+          ((=number? m2 1) m1)
+          ((and (number? m1) (number? m2)) (* m1 m2))
+          (else (list '* m1 m2))))
+
+  (define (make-exponentiation e n)
+    (cond ((= n 0) 1)
+          ((= n 1) e)
+          (else (list '** e n))))
+
+  (define (sum? x) (and (pair? x) (eq? (car x) '+)))
+  (define (addend s) (cadr s))
+  (define (augend s) (if (null? (cddr s)) 0 (append '(+) (cddr s))))
+
+  (define (product? x) (and (pair? x) (eq? (car x) '*)))
+  (define (multiplier p) (cadr p))
+  (define (multiplicand p) (if (null? (cddr p)) 1 (append '(*) (cddr p))))
+
+  (define (exponentiation? x)
+    (and (pair? x) (eq? (car x) '**)))
+  (define (base e) (cadr e))
+  (define (exponent e) (caddr e))
+#+end_src
+
+#+name:deriv
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+    <<deriv-pre>>
+    (define (deriv exp var)
+      (cond ((number? exp) 0)
+            ((variable? exp) (if (same-variable? exp var) 1 0))
+            ((sum? exp) (make-sum (deriv (addend exp) var)
+                                  (deriv (augend exp) var)))
+            ((product? exp)
+             (make-sum
+              (make-product (multiplier exp)
+                            (deriv (multiplicand exp) var))
+              (make-product (deriv (multiplier exp) var)
+                            (multiplicand exp))))
+
+            ((exponentiation? exp)
+             (make-product (make-product (exponent exp)
+                                         (make-exponentiation
+                                          (base exp) (dec (exponent exp))))
+                           (deriv (base exp) var)))
+
+            (else
+             (error "unknown expression type: DERIV" exp))))
+  (deriv '(* x x) 'x)
+  (deriv '(+ x 3) 'x)
+#+end_src
+
+#+RESULTS: deriv
+: (+ x (* x))
+: 1
+: 4
+
+
+
+** Exercise 2.58-a
+#+name:deriv-in
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (variable? x) (symbol? x))
+  (define (same-variable? v1 v2)
+    (and (variable? v1) (variable? v2) (eq? v1 v2)))
+
+  (define (make-sum a1 a2)
+    (cond ((=number? a1 0) a2)
+          ((=number? a2 0) a1)
+          ((and (number? a1) (number? a2))
+           (+ a1 a2))
+          (else (list a1 '+ a2))))
+
+  (define (=number? exp num) (and (number? exp) (= exp num)))
+
+  (define (make-product m1 m2)
+    (cond ((or (=number? m1 0) (=number? m2 0)) 0)
+          ((=number? m1 1) m2)
+          ((=number? m2 1) m1)
+          ((and (number? m1) (number? m2)) (* m1 m2))
+          (else (list m1 '* m2))))
+
+  (define (make-exponentiation e n)
+    (cond ((= n 0) 1)
+          ((= n 1) e)
+          (else (list e '** n))))
+
+  (define (sum? x) (and (pair? x) (eq? (cadr x) '+)))
+  (define (addend s) (car s))
+  (define (augend s) (caddr s))
+
+  (define (product? x) (and (pair? x) (eq? (cadr x) '*)))
+  (define (multiplier p) (car p))
+  (define (multiplicand p) (caddr p))
+
+  (define (exponentiation? x)
+    (and (pair? x) (eq? (cadr x) '**)))
+  (define (base e) (car e))
+  (define (exponent e) (caddr e))
+#+end_src
+
+#+name:deriv-infix
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<deriv-in>>
+  (define (deriv exp var)
+    (cond ((number? exp) 0)
+          ((variable? exp) (if (same-variable? exp var) 1 0))
+          ((sum? exp) (make-sum (deriv (addend exp) var)
+                                (deriv (augend exp) var)))
+          ((product? exp)
+           (make-sum
+            (make-product (multiplier exp)
+                          (deriv (multiplicand exp) var))
+            (make-product (deriv (multiplier exp) var)
+                          (multiplicand exp))))
+
+          ((exponentiation? exp)
+           (make-product (make-product (exponent exp)
+                                       (make-exponentiation
+                                        (base exp) (dec (exponent exp))))
+                         (deriv (base exp) var)))
+
+          (else
+           (error "unknown expression type: DERIV" exp))))
+
+  (deriv '(3 * (x ** 2)) 'x)
+#+end_src
+
+#+RESULTS: deriv-infix
+: (3 * (2 * x))
+
+** Exercise 2.58-b
+#+name:deriv-in-b
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (memq-before item x)
+    (define (m-before item x stack)
+      (cond ((null? x) false)
+            ((eq? item (car x)) stack)
+            (else (m-before item (cdr x) (append stack (list (car x))))))) (m-before item x nil))
+
+  (define (variable? x) (symbol? x))
+  (define (same-variable? v1 v2)
+    (and (variable? v1) (variable? v2) (eq? v1 v2)))
+
+  (define (make-sum a1 a2)
+    (cond ((=number? a1 0) a2)
+          ((=number? a2 0) a1)
+          ((and (number? a1) (number? a2))
+           (+ a1 a2))
+          (else (list a1 '+ a2))))
+
+  (define (=number? exp num) (and (number? exp) (= exp num)))
+
+  (define (make-product m1 m2)
+    (cond ((or (=number? m1 0) (=number? m2 0)) 0)
+          ((=number? m1 1) m2)
+          ((=number? m2 1) m1)
+          ((and (number? m1) (number? m2)) (* m1 m2))
+          (else (list m1 '* m2))))
+
+  (define (make-exponentiation e n)
+    (cond ((= n 0) 1)
+          ((= n 1) e)
+          (else (list e '** n))))
+
+  (define (sum? x) (and (pair? x) (memq '+ x)))
+  (define (addend s) (if (= 1 (length (memq-before '+ s))) (car (memq-before '+ s)) (memq-before '+ s)))
+  (define (augend s) (if (= 1 (length (cdr (memq '+ s)))) (car (cdr (memq '+ s))) (cdr (memq '+ s))))
+
+  (define (product? x) (and (pair? x) (memq '* x)))
+  (define (multiplier p) (if (= 1 (length (memq-before '* p))) (car (memq-before '* p)) (memq-before '* p)))
+  (define (multiplicand p) (if (= 1 (length (cdr (memq '* p)))) (car (cdr (memq '* p))) (cdr (memq '* p))))
+
+  (define (exponentiation? x)
+    (and (pair? x) (eq? (cadr x) '**)))
+  (define (base e) (car e))
+  (define (exponent e) (caddr e))
+#+end_src
+
+#+RESULTS: deriv-in-b
+: /var/folders/_3/nwly65x92d13qp765t5gqbl40000gn/T/babel-Z0tvYe/org-babel-ae7qB2.rkt:48:1: deriv: unbound identifier
+:   in: deriv
+:   location...:
+:    /var/folders/_3/nwly65x92d13qp765t5gqbl40000gn/T/babel-Z0tvYe/org-babel-ae7qB2.rkt:48:1
+
+
+#+name:deriv-infix-b
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<deriv-in-b>>
+  (define (deriv exp var)
+    (cond ((number? exp) 0)
+          ((variable? exp) (if (same-variable? exp var) 1 0))
+          ((sum? exp) (make-sum (deriv (addend exp) var)
+                                (deriv (augend exp) var)))
+
+          ((product? exp)
+           (make-sum
+            (make-product (multiplier exp)
+                          (deriv (multiplicand exp) var))
+            (make-product (deriv (multiplier exp) var)
+                          (multiplicand exp))))
+
+          ((exponentiation? exp)
+           (make-product (make-product (exponent exp)
+                                       (make-exponentiation
+                                        (base exp) (dec (exponent exp))))
+                         (deriv (base exp) var)))
+
+          (else
+           (error "unknown expression type: DERIV" exp))))
+
+  (deriv '(x * x) 'x)
+  (deriv '(3 * x * x) 'x)
+
+  (deriv '(x + (3 * (x + (y + 2)))) 'x)
+  (deriv '(x + 3) 'x)
+  (deriv '(x * y) 'x)
+  (deriv '(x + 3 * (x + y + 2)) 'x)
+  (deriv '(x * y * (x + 3)) 'x)
+  (deriv '(x + 3 * (x + y + 2)) 'y)
+  (deriv '(x + (3 * (x + (y + 2)))) 'x)
+  (deriv '(x * y * (x + 3)) 'x)
+  (deriv '(x * 3 + 5 * (x + y + 2)) 'x) 
+#+end_src
+
+#+RESULTS: deriv-infix-b
+#+begin_example
+(x + x)
+(3 * (x + x))
+4
+1
+y
+4
+((x * y) + (y * (x + 3)))
+3
+4
+((x * y) + (y * (x + 3)))
+8
+#+end_example
+
+
+** Exercise snippet
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<deriv-in-b>>
+  (define expr '(1 * (2 + 3) + 2))
+  (define expr2 '(1 + 3 * 2))
+  (define expr3 '((1 + 3) * 2))
+  (define expr4 '(x * x))
+
+  (memq-before '+ expr)
+  (memq '+ expr)
+
+  (memq-before '+ expr2)
+  (memq '+ expr2)
+
+  (memq-before '* expr3)
+  (memq '* expr3)
+
+  (memq-before '* expr4)
+  (memq '* expr4)
+#+end_src
+
+
+#+RESULTS:
+: (1 * (2 + 3))
+: (+ 2)
+: (1)
+: (+ 3 * 2)
+: ((1 + 3))
+: (* 2)
+: (x)
+: (* x)
+
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (deriv '(x + (3 * (x + (y + 2)))) 'x)
+  (deriv '(x + 3) 'x)
+  (deriv '(x * y) 'x)
+  (deriv '(x + 3 * (x + y + 2)) 'x)
+#+end_src
+
+
+
+
+
+* 2.3.3 Representing Sets
+** Sets as unorderd lists
+*** Exercise 2.59 (unordered set)
+#+name:unordered-set
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+(define (element-of-set? x set)
+  (cond ((null? set) false)
+        ((= x (car set)) true)
+        (else (element-of-set? x (cdr set)))))
+
+(define (adjoin-set x set)
+  (if (element-of-set? x set) set (cons x set)))
+
+(define (intersection-of-set set1 set2)
+  (cond ((or (null? set1) (null? set2)) '())
+        ((element-of-set? (car set1) set2) (cons (car set1) (intersection-of-set (cdr set1) set2)))
+        (else (intersection-of-set (cdr set1) set2))))
+
+(define (union-set set1 set2)
+  (cond ((null? set1) set2)
+        ((null? set2) set1)
+        ((= (car set1) (car set2)) (cons (car set1) (union-set (cdr set1) (cdr set2))))
+        (else (union-set (cdr set1) set2))))
+#+end_src
+
+*** Exercise 2.60 (duplicated set)
+#+name:duplicated-set
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+(define (element-of-set? x set)
+  (cond ((null? set) false)
+        ((= x (car set)) true)
+        (else (element-of-set? x (cdr set)))))
+
+(define (adjoin-set x set)
+  (cons x set))
+
+(define (intersection-of-set set1 set2)
+  (cond ((or (null? set1) (null? set2)) '())
+        ((element-of-set? (car set1) set2) (cons (car set1) (intersection-of-set (cdr set1) set2)))
+        (else (intersection-of-set (cdr set1) set2))))
+
+(define (union-set set1 set2)
+  (append set1 set2))
+
+(element-of-set? 1 '(1 2 3 1 3))
+(adjoin-set 1 '(1 2 3 1 3))
+(intersection-of-set '(2 2) '(2 2 2))
+(union-set '(1 3 4 9) '(1 2 3 1 3))
+#+end_src
+
+#+RESULTS: duplicated-set
+: #t
+: (1 1 2 3 1 3)
+: (2 2)
+: (1 3 4 9 1 2 3 1 3)
+
+
+
+
+
+** Sets as orderd lists
+*** Exercise 2.61 (ordered set)
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+(define (element-of-set? x set)
+  (cond ((null? set) false)
+        ((= x (car set)) true)
+        ((< x (car set)) false)
+        (else (element-of-set? x (cdr set)))))
+
+(define (intersection-set set1 set2)
+  (if (or (null? set1) (null? set2))
+      '()
+      (let ((x1 (car set1)) (x2 (car set2)))
+        (cond ((= x1 x2)
+               (cons x1 (intersection-set (cdr set1)
+                                          (cdr set2))))
+              ((< x1 x2)
+               (intersection-set (cdr set1) set2))
+              ((< x2 x1)
+               (intersection-set set1 (cdr set2)))))))
+
+(define (adjoin-set x set))
+#+end_src
+
+*** Exercise snippet
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (intersection-set set1 set2))
+#+end_src
+
+#+RESULTS:
+: hello world
+
+#+begin_src elisp
+  (+ 1 1)
+#+end_src
+
+#+RESULTS:
+: 2
+
+*** test
+#+begin_src python :results output
+  print("hello")
+#+end_src
+
+#+RESULTS:
+: good
+
+
+*** Exercise snippet
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+#+end_src
+
+#+RESULTS:
+: /var/folders/_3/nwly65x92d13qp765t5gqbl40000gn/T/babel-x82w46/org-babel-R0KDwc.rkt:4:1: setq: unbound identifier
+:   in: setq
+:   location...:
+:    /var/folders/_3/nwly65x92d13qp765t5gqbl40000gn/T/babel-x82w46/org-babel-R0KDwc.rkt:4:1
+
+** Exercise snippet
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+#+end_src

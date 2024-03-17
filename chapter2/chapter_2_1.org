@@ -1,0 +1,517 @@
+#+TITLE: Introduction to Data Abstraction
+
+* Pre
+** Snippets
+#+begin_src racket :lang sicp :results output
+#+end_src
+
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+#+end_src
+** pre-requistes
+#+NAME:gcd
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (gcd a b)
+    (if (= b 0)
+        a
+        (gcd b (remainder a b))))
+#+end_src
+
+#+NAME:xor
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (xor a b)
+    (if (not (equal? a b)) true false))
+#+end_src
+
+#+NAME:average
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (average a b) (/ (+ a b) 2))
+#+end_src
+
+#+NAME:pow
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (pow x n)
+    (if (= n 1)
+        x
+        (* x (pow x (dec n)))))
+#+end_src
+** Test 
+#+begin_src racket :lang sicp :results output
+  (define (make-rat n d) (cons n d))
+  (define (numor x) (car x))
+  (define (denom x) (cdr x))
+  (define (print-rat x)
+    (newline)
+    (display (numor x))
+    (display "/")
+    (display (denom x)))
+  (define a (make-rat 4 3))
+  (print-rat a)
+#+end_src
+
+#+RESULTS:
+: 
+: 4/3
+* 2.1.1 Example: Arithmetic Operations for Rational Numbers
+** Rational number
+#+NAME:rational-calc
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (add-rat x y)
+    (make-rat (+ (* (numer x) (denom y))
+                 (* (numer y) (denom x)))
+              (* (denom x) (denom y))))
+  (define (sub-rat x y)
+    (make-rat (- (* (numer x) (denom y))
+                 (* (numer y) (denom x)))
+              (* (denom x) (denom y))))
+  (define (mul-rat x y)
+    (make-rat (* (numer x) (numer y))
+              (* (denom x) (denom y))))
+  (define (div-rat x y)
+    (make-rat (* (numer x) (denom y))
+              (* (denom x) (numer y))))
+#+end_src
+
+#+NAME:rational
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<rational-calc>>
+  <<gcd>>
+  (define (make-rat n d)
+    (let ((g (gcd n d))) (cons (/ n g) (/ d g))))
+  (define (numer x) (car x))
+  (define (denom x) (cdr x))
+  (define (print-rat x)
+    (newline)
+    (display (numer x))
+    (display "/")
+    (display (denom x)))
+#+end_src
+
+#+RESULTS: rational
+
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<rational>>
+  (define one-half (make-rat 1 2))
+  (define one-third (make-rat 1 3))
+  (add-rat one-half one-third)
+  (mul-rat one-half one-third)
+  (add-rat one-third one-third)
+#+end_src
+
+#+RESULTS:
+: (5 . 6)
+: (1 . 6)
+: (2 . 3)
+
+** Exercise 2.1 
+#+NAME:rational
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<rational-calc>>
+  <<gcd>>
+  (define (make-rat n d)
+    (let ((g (gcd (abs n) (abs d))))
+      (cond 
+             ((and (negative? n) (negative? d)) (cons (/ (abs n) g) (/ (abs d) g)))
+             ((and (positive? n) (negative? d)) (cons (/ (- n) g) (/ (abs d) g)))
+             (else (cons (/ n g) (/ d g)))
+            )))
+
+  (define (numer x) (car x))
+  (define (denom x) (cdr x))
+  (define (print-rat x)
+    (newline)
+    (display (numer x))
+    (display "/")
+    (display (denom x)))
+#+end_src
+
+#+RESULTS:
+
+** Exercise 2.2
+#+NAME:segment
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<point>>
+  <<average>>
+  (define (make-segment a b) (cons a b))
+  (define (start-segment l) (car l))
+  (define (end-segment l) (cdr l))
+  (define (midpoint-segment l)
+    (make-point (average
+                 (x-point (start-segment l))
+                 (x-point (end-segment l)))
+                (average
+                 (y-point (start-segment l))
+                 (y-point (end-segment l)))
+                ))
+  (define (print-line l)
+    (print-point (start-segment l))
+    (display "-")
+    (print-point (end-segment l)))
+#+end_src
+
+#+NAME:point
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+    (define (make-point x y) (cons x y))
+    (define (x-point p) (car p))
+    (define (y-point p) (cdr p))
+    (define (print-point p)
+      (display "(")
+      (display (x-point p))
+      (display ",")
+      (display (y-point p))
+      (display ")"))
+#+end_src
+
+#+RESULTS: point
+
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<segment>>
+  (define x (make-point 1 3))
+  (define y (make-point 2 4))
+  (define line (make-segment x y))
+  (print-line line)
+  (newline)
+  (print-point (midpoint-segment line))
+#+end_src
+
+#+RESULTS:
+: (1,3)-(2,4)
+: (3/2,7/2)
+
+** Exercise 2.3
+#+NAME:rectangle
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<segment>>
+  (define (make-rectangle width-line height-line) (cons width-line height-line))
+  (define (width-rectangle rectangle) (car rectangle))
+  (define (height-rectangle rectangle) (cdr rectangle))
+
+  (define (make-rectangle left-bottom-p right-upper-p) (cons left-bottom-p right-upper-p))
+  (define (width-rectangle rectangle) (car rectangle))
+  (define (height-rectangle rectangle) (cdr rectangle))
+
+  (define (area-rectangle rectangle) (* (width-rectangle rectangle) (height-rectangle rectangle)))
+  (define (perimeter-rectangle rectangle) (* (+ (width-rectangle rectangle) (height-rectangle rectangle)) 2))
+#+end_src
+
+#+RESULTS: rectangle
+: /var/folders/_3/nwly65x92d13qp765t5gqbl40000gn/T/babel-lDHQbu/org-babel-lvKzBS.rkt:7:5: lambda: bad syntax
+:   in: lambda
+:   location...:
+:    /var/folders/_3/nwly65x92d13qp765t5gqbl40000gn/T/babel-lDHQbu/org-babel-lvKzBS.rkt:7:5
+
+** Exercise 2.4
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (cons x y)
+    (lambda (m) (m x y)))
+  (define (car z)
+    (z (lambda (p q) p)))
+  (define (cdr z)
+    (z (lambda (p q) q)))
+
+  (car (cons 3 1))
+  (cdr (cons 3 1))
+#+end_src
+
+#+RESULTS:
+: 3
+: 1
+
+** Exercise 2.5
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<pow>>
+  (define (cons a b)
+    (* (pow 2 a) (pow 3 b)))
+  (define (car p)
+    (if (not (= 0 (remainder p 3))) (log p 2) (car (/ p 3))))
+  (define (cdr p)
+    (if (not (= 0 (remainder p 2))) (log p 3) (cdr (/ p 2))))
+
+  (define p (cons 3 18))
+  p
+  (car p)
+  (cdr p)
+#+end_src
+
+#+RESULTS:
+: /var/folders/_3/nwly65x92d13qp765t5gqbl40000gn/T/babel-ZSpwEU/org-babel-skUcuo.rkt:19:0: ass: unbound identifier
+:   in: ass
+:   location...:
+:    /var/folders/_3/nwly65x92d13qp765t5gqbl40000gn/T/babel-ZSpwEU/org-babel-skUcuo.rkt:19:0
+
+** Exercise 2.6
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define zero
+    (lambda (f) (lambda (x) x)))
+
+  (define (add-1 n)
+    (lambda (f) (lambda (x) (f ((n f) x)))))
+
+  (define one
+    (lambda (f) (lambda (x) (f x))))
+
+  (define two
+    (lambda (f) (lambda (x) (f (f x)))))
+
+  (define (+ a b)
+    (lambda (f) (lambda (x) ((a f) ((b f) x)))))
+
+  (define (square x) (* x x))
+  ((one square) 4)
+  ((two square) 4)
+  (((+ two two) inc) 2)
+#+end_src
+
+#+RESULTS:
+: 16
+: 256
+: 6
+
+* 2.1.4 Extended Exercise: Interval Arithmetic
+#+NAME:interval-calc
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (add-interval x y)
+    (make-interval (+ (lower-bound x) (lower-bound y))
+                   (+ (upper-bound x) (upper-bound y))))
+
+  (define (mul-interval x y)
+    (let ((p1 (* (lower-bound x) (lower-bound y)))
+          (p2 (* (lower-bound x) (upper-bound y)))
+          (p3 (* (upper-bound x) (lower-bound y)))
+          (p4 (* (upper-bound x) (upper-bound y))))
+      (make-interval (min p1 p2 p3 p4) (max p1 p2 p3 p4))))
+
+  (define (zero-interval? interval)
+    (= (upper-bound interval) (lower-bound interval)))
+
+  (define (div-interval x y)
+    (if (zero-interval? y)
+        (display "Can not use zero interval for divider")
+        (mul-interval
+         x
+         (make-interval (/ 1.0 (upper-bound y))
+                        (/ 1.0 (lower-bound y))))))
+
+  (define (sub-interval x y)
+    (make-interval (- (lower-bound x) (upper-bound y))
+                   (- (upper-bound x) (lower-bound y))))
+
+#+end_src
+
+#+RESULTS: interval-calc
+: /var/folders/_3/nwly65x92d13qp765t5gqbl40000gn/T/babel-mY6mNT/org-babel-wlILCF.rkt:5:3: make-interval: unbound identifier
+:   in: make-interval
+:   location...:
+:    /var/folders/_3/nwly65x92d13qp765t5gqbl40000gn/T/babel-mY6mNT/org-babel-wlILCF.rkt:5:3
+
+#+NAME:interval-div-ben
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (ben-mul-interval x y)
+    (let
+        (
+         (a1 (lower-bound x))
+         (a2 (upper-bound x))
+         (b1 (lower-bound y))
+         (b2 (upper-bound y)))
+        (cond ((and (> a1 0) (> a2 0) (> b1 0) (> b2 0)) (make-interval (* a1 b1) (* a2 b2)))
+               ((and (> a1 0) (> a2 0) (< b1 0) (> b2 0)) (make-interval (* a2 b1) (* a2 b2)))
+               ((and (> a1 0) (> a2 0) (< b1 0) (< b2 0)) (make-interval (* a2 b1) (* a1 b2)))
+
+               ((and (< a1 0) (> a2 0) (> b1 0) (> b2 0)) (make-interval (* a1 b2) (* a2 b2)))
+               ((and (< a1 0) (> a2 0) (< b1 0) (> b2 0)) (make-interval (min (* a1 b2) (* a2 b1)) (max (* a1 b1) (* a2 b2))))
+               ((and (< a1 0) (> a2 0) (< b1 0) (< b2 0)) (make-interval (* a2 b1) (* a1 b1)))
+
+               ((and (< a1 0) (< a2 0) (> b1 0) (> b2 0)) (make-interval (* a1 b2) (* a2 b1)))
+               ((and (< a1 0) (< a2 0) (< b1 0) (> b2 0)) (make-interval (* a1 b2) (* a1 b1)))
+               ((and (< a1 0) (< a2 0) (< b1 0) (< b2 0)) (make-interval (* a2 b2) (* a1 b1))) )))
+#+end_src
+
+** Exercise 2.7
+#+NAME:interval
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<interval-calc>>
+  (define (make-interval a b) (cons a b))
+  (define (lower-bound interval) (car interval))
+  (define (upper-bound interval) (cdr interval))
+
+  (define (make-center-width c w) (make-interval (- c w) (+ c w)))
+  (define (center i) (/ (+ (lower-bound i) (upper-bound i)) 2))
+  (define (width i) (/ (- (upper-bound i) (lower-bound i)) 2))
+#+end_src
+
+#+RESULTS: interval
+
+** Center-width
+#+NAME:center-width
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<interval-calc>>
+  (define (make-center-width c w) (make-interval (- c w) (+ c w)))
+  (define (center i) (/ (+ (lower-bound i) (upper-bound i)) 2))
+  (define (width i) (/ (- (upper-bound i) (lower-bound i)) 2))
+#+end_src
+
+#+RESULTS: center-width
+: /var/folders/_3/nwly65x92d13qp765t5gqbl40000gn/T/babel-HZgo6E/org-babel-R93SEY.rkt:5:3: make-interval: unbound identifier
+:   in: make-interval
+:   location...:
+:    /var/folders/_3/nwly65x92d13qp765t5gqbl40000gn/T/babel-HZgo6E/org-babel-R93SEY.rkt:5:3
+
+** Exercise 2.9
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<interval>>
+  (define interval (make-interval 1 5))
+  (define interval-added (add-interval interval interval))
+  (define interval-subbed (sub-interval interval interval))
+  (define interval-multied (mul-interval interval interval))
+  (define interval-divided (div-interval interval interval))
+  interval
+  interval-added
+  interval-subbed
+
+  (width interval)
+  (display "add\n")
+  (width interval-added)
+  (+ (width interval) (width interval))
+
+  (display "sub\n")
+  (width interval-subbed)
+  (- (width interval) (width interval))
+
+  (display "mul\n")
+  (width interval-multied)
+  (* (width interval) (width interval))
+
+  (display "div\n")
+  (width interval-divided)
+  (/ (width interval) (width interval))
+#+end_src
+
+#+RESULTS:
+#+begin_example
+(1 . 5)
+(2 . 10)
+(0 . 0)
+2
+add
+4
+4
+sub
+0
+0
+mul
+12
+4
+div
+2.4
+1
+(0.2 . 1.25)
+#+end_example
+
+** Exercise 2.11
+"By testing the signs of the endpoints of the intervals,
+it is possible to break /mul-interval/ into nine case,
+only one of which requires more than two multiplications."
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<interval>>
+  (define a (make-interval 2 4))
+  (define b (make-interval -2 4))
+  (define c (make-interval -4 -2))
+  (ben-mul-interval a a)
+  (ben-mul-interval a b)
+  (ben-mul-interval a c)
+  (ben-mul-interval b a)
+  (ben-mul-interval b b)
+  (ben-mul-interval b c)
+  (ben-mul-interval c a)
+  (ben-mul-interval c b)
+  (ben-mul-interval c c)
+#+end_src
+
+#+RESULTS:
+: (4 . 16)
+: (-8 . 16)
+: (-16 . -4)
+: (-8 . 16)
+: (-8 . 16)
+: (-16 . 8)
+: (-16 . -4)
+: (-16 . 8)
+: (4 . 16)
+
+
+** Exercise 2.12
+#+NAME:center-percent
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<interval>>
+  (define (make-center-percent c t-percent)
+    (make-center-width c (* c (/ t-percent 100))))
+  (define (percent interval) (* 100.0 (/ (width interval) (center interval))))
+#+end_src
+
+#+RESULTS: center-percent
+: 120072.0
+: 4.997001798920648
+: (4 . 6)
+: 5
+: 1
+: 20
+
+** Exercise 2.13
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<center-percent>>
+  (define (easy-percent i1 i2)
+    (let ((p1 (percent i1)) (p2 (percent i2)))
+      (/ (* 10000 (+ p1 p2)) (+ 10000 (* p1 p2)))))
+
+  (define a (make-center-percent 5 2))
+  (define b (make-center-percent 10 3))
+  (define c (mul-interval a b))
+
+  (easy-percent a b)
+  (percent c)
+#+end_src
+
+#+RESULTS:
+: 4.997001798920648
+: 4.997001798920648
+
+
+** Lem formula
+#+NAME:lem
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<center-percent>>
+  (define (par1 r1 r2)
+    (div-interval (mul-interval r1 r2)
+                  (add-interval r1 r2)))
+
+  (define (par2 r1 r2)
+    (let ((one (make-interval 1 1)))
+      (div-interval
+       one (add-interval (div-interval one r1)
+                         (div-interval one r2)))))
+
+  (define (par3 r1 r2)
+    (mul-interval (div-interval r1 (add-interval r1 r2))
+                  r2))
+#+end_src
+
+#+RESULTS: lem
+
+** Exercise 2.14
+
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<lem>>
+  (define r1 (make-center-percent 6.8 10))
+  (define r2 (make-center-percent 4.7 5))
+
+  (par1 r1 r2)
+  (par2 r1 r2)
+
+  (define a (make-center-percent 2 0.00001))
+#+end_src
+
+#+RESULTS:
+: (2.201031010873943 . 3.4873689182805854)
+: (2.581558809636278 . 2.97332259363673)
+: #t
+: (1.2401215805471124 . 1.6752519596864501)
+: (0.8181818181818182 . 1.222222222222222)

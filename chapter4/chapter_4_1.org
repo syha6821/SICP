@@ -1,0 +1,724 @@
+#+TITLE: The Metacircular Evaluator
+* Pre
+** square
+#+name:square
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (square x) (* x x))
+#+end_src
+
+** Filter
+#+name:filter
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (filter predicate sequence)
+    (cond ((null? sequence) nil)
+          ((predicate (car sequence)) (cons (car sequence) (filter predicate (cdr sequence))))
+          (else (filter predicate (cdr sequence)))))
+#+end_src
+
+#+RESULTS:
+: (1 3 5)
+
+** Accumulate
+#+name:accumulate
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (accumulate op initial seq)
+    (if (null? seq) initial (op (car seq) (accumulate op initial (cdr seq)))) )
+#+end_src
+
+** Enumerate
+#+name:enumerate-interval
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (enumerate-interval low high)
+    (if (> low high) nil (cons low (enumerate-interval (inc low) high))))
+#+end_src
+
+#+name:enumerate-tree
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (enumerate-tree tree)
+    (cond ((null? tree) nil)
+          ((not (pair? tree)) (list tree))
+          (else (append (enumerate-tree (car tree)) (enumerate-tree (cdr tree))))
+          ))
+#+end_src
+
+** pre-requistes
+#+NAME:prime
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (square x) (* x x))
+  (define (smallest-divisor n) (find-divisor n 2))
+  (define (find-divisor n test-divisor)
+    (cond ((> (square test-divisor) n) n)
+          ((divides? test-divisor n) test-divisor)
+          (else (find-divisor n (+ test-divisor 1 )))))
+  (define (divides? a b) (= (remainder b a) 0))
+
+  (define (prime? n)
+    (and (not (= n 1)) (= n (smallest-divisor n))))
+#+end_src
+
+#+NAME:fib
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (fib n)
+    (cond ((= n 0) 0)
+          ((= n 1) 1)
+          (else (+
+                 (fib (- n 1))
+                 (fib (- n 2))))))
+#+end_src
+
+#+NAME:square
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (square x) (* x x))
+#+end_src
+
+#+NAME:gcd
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (gcd a b)
+    (if (= b 0)
+        a
+        (gcd b (remainder a b))))
+#+end_src
+
+#+NAME:average
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (average a b) (/ (+ a b) 2))
+#+end_src
+
+#+NAME:pow
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (pow x n)
+    (if (= n 1)
+        x
+        (* x (pow x (dec n)))))
+#+end_src
+
+** stream 
+*** stream
+#+name:stream
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<stream-interval>>
+  <<stream-filter>>
+  <<add-streams>>
+  <<mul-streams>>
+  <<scale-stream>>
+  <<partial-sums>>
+  (define (stream-car s) (car s))
+  (define (stream-cdr s) (force (cdr s)))
+
+  (define (stream-ref s n)
+    (if (= n 0)
+        (stream-car s)
+        (stream-ref (stream-cdr s) (- n 1))))
+
+  (define (stream-map proc . argstreams)
+    (if (stream-null? (car argstreams))
+        the-empty-stream
+        (cons-stream
+         (apply proc (map stream-car argstreams))
+         (apply stream-map
+                (cons proc (map stream-cdr argstreams))))))
+
+  (define (stream-for-each proc s)
+    (if (stream-null? s)
+        'done
+        (begin (proc (stream-car s))
+               (stream-for-each proc (stream-cdr s)))))
+
+  (define (neg-stream stream) (stream-map (lambda (x) (- x)) stream))
+
+
+  (define (display-stream s)
+    (stream-for-each display-line s))
+
+  (define (display-line x) (newline) (display x))
+#+end_src
+*** stream interval
+#+name:stream-interval
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (stream-enumerate-interval low high)
+    (if (> low high)
+        the-empty-stream
+        (cons-stream
+         low
+         (stream-enumerate-interval (+ low 1) high))))
+#+end_src
+
+*** stream filter
+#+name:stream-filter
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (stream-filter pred stream)
+    (cond ((stream-null? stream) the-empty-stream)
+          ((pred (stream-car stream))
+           (cons-stream (stream-car stream)
+                        (stream-filter
+                         pred
+                         (stream-cdr stream))))
+          (else (stream-filter pred (stream-cdr stream)))))
+#+end_src
+
+*** add streams
+#+name:add-streams
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (add-streams s1 s2) (stream-map + s1 s2))
+#+end_src
+
+*** mul streams
+#+name:mul-streams
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (mul-streams s1 s2) (stream-map * s1 s2))
+#+end_src
+
+*** scale stream
+#+name:scale-stream
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (scale-stream s n)
+    (stream-map (lambda (e) (* n e)) s))
+#+end_src
+*** partial sums
+#+name:partial-sums
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (partial-sums s)
+    (cons-stream (stream-car s) (add-streams (stream-cdr s) (partial-sums s))))
+#+end_src
+
+** merge 
+#+name:merge
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (merge s1 s2)
+    (cond ((stream-null? s1) s2)
+          ((stream-null? s2) s1)
+          (else
+           (let ((s1car (stream-car s1))
+                 (s2car (stream-car s2)))
+             (cond ((< s1car s2car)
+                    (cons-stream
+                     s1car
+                     (merge (stream-cdr s1) s2)))
+                   ((> s1car s2car)
+                    (cons-stream
+                     s2car
+                     (merge s1 (stream-cdr s2))))
+                   (else
+                    (cons-stream
+                     s1car
+                     (merge (stream-cdr s1)
+                            (stream-cdr s2)))))))))
+#+end_src
+
+** Integer 
+#+name:integers
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define ones (cons-stream 1 ones))
+  (define integers (cons-stream 1 (add-streams ones integers)))
+#+end_src
+
+** Test 
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+#+end_src
+
+* Evaluator
+** eval 
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+#+end_src
+
+#+RESULTS:
+: /var/folders/_3/nwly65x92d13qp765t5gqbl40000gn/T/babel-cNtlgO/org-babel-V9nLjZ.rkt:4:0: user-unitial-environment: unbound identifier
+:   in: user-unitial-environment
+:   location...:
+:    /var/folders/_3/nwly65x92d13qp765t5gqbl40000gn/T/babel-cNtlgO/org-babel-V9nLjZ.rkt:4:0
+
+* 1.
+** Test 
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+#+end_src
+
+#+RESULTS:
+: /var/folders/_3/nwly65x92d13qp765t5gqbl40000gn/T/babel-AOYwAB/org-babel-GdDAoZ.rkt:4:0: right: unbound identifier
+:   in: right
+:   location...:
+:    /var/folders/_3/nwly65x92d13qp765t5gqbl40000gn/T/babel-AOYwAB/org-babel-GdDAoZ.rkt:4:0
+
+** Exercise 4.1
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  ;; original
+  (define (list-of-values exps env)
+    (if (no-operands? exps)
+        (cons (eval (first-operand exps) env)
+              (list-of-values (rest-operands exps) env))))
+  ;; left
+  (define (list-of-values exps env)
+    (if (no-operands? exps)
+        (cons (eval (left-operand exps) env)
+              (list-of-values (right-operands exps) env))))
+
+  ;; right
+  (define (list-of-values exps env)
+    (if (no-operands? exps)
+        (cons (eval (right-operand exps) env)
+              (list-of-values (left-operands exps) env))))
+
+  ;; left and right selectors are different from implementaion lisp
+#+end_src
+
+** Exercise 4.2 
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (assignment? exp) (tagged-list? exp 'call))
+  (define (operator exp) (cadr exp))
+  (define (operands exp) (cddr exp))
+
+  ((application? exp)
+   (apply (eval (operator exp) env)
+          (list-of-values (operands exp) envs)))
+#+end_src
+
+** Exercise  4.4
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (and? exp) (tagged-list? exp 'and))
+  (define (and-values exp) (cdr exp))
+  (define (first-value values) (car values))
+  (define (rest-values values) (cdr values))
+
+  (define (eval-and exps env)
+    (cond ((no-exps? exps) 'true)
+          ((true? (car exps)) (eval-and (cdr exps) env))
+          (else 'false)))
+
+  (define (eval-or exps env)
+    (cond ((no-exps? exps) 'false)
+          ((false? (car exps)) (eval-or (cdr exps) env))
+          (else 'true)))
+
+  (define (and->if exp)
+    (expand-values (and-values exp)))
+
+  (define (expand-values values)
+    (if (null? values)
+        'true
+        (make-if (first-value values)
+                 (expand-values (rest-values values))
+                 'false)))
+#+end_src
+
+** cond arrow syntax 
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (cond ((list 1 2 3 4) => cdr)
+        (else cadr))
+#+end_src
+
+#+RESULTS:
+: (2 3 4)
+
+** Exercise 4.5 
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (arrow? symbol) (eq? symbol '=>))
+
+  ;; modified expand-clauses
+  (define (expand-clauses clauses)
+    (if (null? clauses)
+        'false
+        (let ((first (car clauses))
+              (rest (cdr clauses)))
+          (if (cond-else-clause? first)
+              (if (null? rest)
+                  (sequence->exp (cond-actions first))
+                  (error "ELSE clause isn't last: COND->IF"
+                         clauses))
+              (if (arrow? (cadr first))
+                  (let ((arg (car first))
+                        (proc (cddr first)))
+                    (make-if arg
+                             (list proc arg)
+                             (expand-clauses rest)))
+                  (make-if (cond-predicate first)
+                           (sequence->exp (cond-actions first))
+                           (expand-clauses rest)))))))
+#+end_src
+
+** Exercise 4.6 
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (let->combination exp)
+    (let ((varexps (cadr exp)))
+      (let ((vars (map car varexps))
+            (exps (map cadr varexps))
+            (body (cddr exp)))
+        (list (make-lambda vars body)
+              exps))))
+#+end_src
+
+#+RESULTS:
+: /var/folders/_3/nwly65x92d13qp765t5gqbl40000gn/T/babel-GCoIzS/org-babel-IaxuQQ.rkt:9:13: make-lambda: unbound identifier
+:   in: make-lambda
+:   location...:
+:    /var/folders/_3/nwly65x92d13qp765t5gqbl40000gn/T/babel-GCoIzS/org-babel-IaxuQQ.rkt:9:13
+
+** Exercise 4.7
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (make-let bindings body)
+    (list 'let bindings body))
+
+  (define (let*? exp) (tagged-list exp 'let*))
+
+  (define (only-body? let-exp) (null? (cddr let-exp)))
+
+  (define (body-let* exp)
+    (cddr exp))
+
+  (define (bindings-let* exp) (cadr exp))
+
+  (define (let*->nested-lets exp)
+    (let ((bindings (bindings-let* exp))
+          (body (body-let* exp)))
+      (if (null? bindings)
+          body
+          (make-let (car bindings)
+                    (let*->nested-lets (make-let (cdr bindings) body))))))
+#+end_src
+
+** Exercise 4.8 
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (named-let? exp) (symbol? (cadr exp)))
+  (define (make-named-let var bindings body) (list 'let var bindings body))
+
+  (define (body-let exp) (caddr exp))
+  (define (bindings-let exp) (cadr exp))
+
+  (define (var-named-let exp) (caddr exp))
+  (define (body-named-let exp) (cadddr exp))
+  (define (bindings-named-let exp) (caddr exp))
+
+  (define (let->combination exp)
+    (let ((exps (if (named-let? exp) (make-let (cons (var-named-let exp)
+                                                     (bindings-named-let exp))
+                                               (cons (var-named-let exp)
+                                                     (bindings-named-let exp))) exp)))
+      (let ((bindings (cadr exps)))
+        (let ((vars (map car bindings))
+              (exps (map cadr bindings))
+              (body (cddr exps)))
+          (list (make-lambda vars body)
+                exps)))))
+#+end_src
+
+#+RESULTS:
+: /var/folders/_3/nwly65x92d13qp765t5gqbl40000gn/T/babel-GCoIzS/org-babel-4nGRDZ.rkt:14:36: make-let: unbound identifier
+:   in: make-let
+:   location...:
+:    /var/folders/_3/nwly65x92d13qp765t5gqbl40000gn/T/babel-GCoIzS/org-babel-4nGRDZ.rkt:14:36
+
+** Exercise 4.9 
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (while (i < 10)
+    (display "Hi"))
+
+  (for (define i 0) (< i 10) (inc! i)
+       (display i))
+
+  (until (= i 10)
+         (inc! i)
+         (display i))
+#+end_src
+
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (eval exp env)
+    (cond ((do? exp) (eval (do->lambda exp) env))
+          ((for? exp) ())
+          ((while? exp) ())
+          ((until? exp) ())))
+
+  (define (make-do exp) (list 'do exp))
+
+  (define (do->lambda exp)
+    (make-lambda '() (cadr exp)))
+
+  (define (while->combinations exp)
+    ())
+#+end_src
+
+** Test 
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+#+end_src
+
+** Test 
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+#+end_src
+
+* 3. Evaluator Data Structures
+** Exercise 4.11 
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (make-frame vars vals) (map cons vars vals))
+  (define (frame-variables frame) (map car frame))
+  (define (frame-values frame) (map cdr frame))
+  (define (add-bindings-to-frame! var val frame)
+    (set-car! frame (cons (cons var val) frame)))
+  (define (extend-environment vars vals base-env)
+    (if (= (length vars) (length vals))
+        (cons (make-frame vars vals) base-env)
+        (if (< (length vars) (length vals))
+            (error "Too many arguments supplied" vars vals)
+            (error "Too few arguments supplied" vars vals))))
+  (define (lookup-variable-value var env)
+    (define (env-loop env)
+      (define (scan bindings)
+        (cond ((null? bindings)
+               (env-loop (enclosing-environment env)))
+              ((eq? var (car (car bindings))) (car (cdr bindings)))
+              (else (scan (cdr bindings)))))
+      (if (eq? env the-empty-environment env)
+          (error "Unbound variable" var)
+          (let ((frame (first-frame env)))
+            (scan (cdr frame)))))
+    (env-loop env))
+#+end_src
+** Exercise 4.12 
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (scan vars vals f)
+    (cond ((null? vars) 'not-found)
+          ((eq? var (car vars)) (f vals))
+          (else (scan (cdr vars) (cdr vals)))))
+
+  (define (lookup-variable-value var env)
+    (define (env-loop env)
+      (if (eq? env the-empty-environment)
+          (error "Unbound variable" var)
+          (let ((frame (first-frame env)))
+            (let ((result (scan (frame-varialbes frame)
+                                (frame-values frame)
+                                car)))
+              (if (eq? result 'not-found)
+                  (env-loop (enclosing-environment env))
+                  result)))))
+    (env-loop env))
+
+  (define (set-variable-value! var val env)
+    (define (env-loop env)
+      (if (eq? env the-empty-environment)
+          (error "Unbound variable: SET!" var)
+          (let* ((frame (first-frame env))
+                 (result (scan (frame-variables frame)
+                               (frame-values frame)
+                               (lambda (vals) (set-car! vals val)))))
+            (if (eq? result 'not-found)
+                (env-loop (enclosing-environment env))))))
+    (env-loop env))
+
+  (define (define-variable! var val env)
+    (let* ((frame (first-frame env))
+           (result (scan (frame-variables frame)
+                         (frame-values frame)
+                         (lambda (vals) (set-car! vals val)))))
+      (if (eq? result 'not-found)
+          (add-bindings-to-frame! var val frame))))
+#+end_src
+
+#+RESULTS:
+: /var/folders/_3/nwly65x92d13qp765t5gqbl40000gn/T/babel-cNtlgO/org-babel-WztdjV.rkt:6:14: var: unbound identifier
+:   in: var
+:   location...:
+:    /var/folders/_3/nwly65x92d13qp765t5gqbl40000gn/T/babel-cNtlgO/org-babel-WztdjV.rkt:6:14
+
+** Exercise 4.13 
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (unbound x)
+  (define (unbound? exp) (tagged-list exp 'unbound))
+  (define (make-unbound! var env)
+    (define (env-loop env)
+      (if (eq? env the-empty-environment)
+          (error "Already Unbound variable" var)
+          (let ((frame (first-frame env)))
+            (let ((result (scan (frame-variables frame)
+                                (frame-values fram)
+                                (lambda (vals) (set! vals (cdr vals))))))
+              (if (eq? result 'not-found)
+                  (env-loop (enclosing-environment env)))))))
+    (env-loop env))
+#+end_src
+
+
+
+** Test 
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+#+end_src
+
+
+
+** last-pair 
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (last-pair x)
+    (if (null? (cdr x)) x  (last-pair (cdr x))))
+
+  (define l1 (list 3 6 9 11))
+  (last-pair l1)
+  (set-cdr! (last-pair l1) (list 101 102))
+  l1
+#+end_src
+
+#+RESULTS:
+: (11)
+: (3 6 9 11 101 102)
+
+* 4. Running the Evaluator as a Program
+* 5.Internal Definitions
+** Test 
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (f x)
+    (define (even? n) (if (= n 0) true (odd? (- n 1))))
+    (define (odd? n) (if (= n 0) false (even? (- n 1))))
+    (even? x))
+#+end_src
+
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (a) (b))
+  (define (b) 3)
+  (a)
+#+end_src
+
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (x)
+    (define a b)
+    (define b 3)
+    a)
+  (x)
+#+end_src
+
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (x)
+    (letrec ((a b)
+             (b 3))
+      a))
+  (x)
+#+end_src
+
+#+RESULTS:
+: b: undefined;
+:  cannot use before initialization
+:   context...:
+:    /var/folders/_3/nwly65x92d13qp765t5gqbl40000gn/T/babel-uTMuc1/org-babel-thTasa.rkt:8:0
+:    body of "/var/folders/_3/nwly65x92d13qp765t5gqbl40000gn/T/babel-uTMuc1/org-babel-thTasa.rkt"
+
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  ((lambda ()
+    (let ((a '*unassigned*)
+          (b '*unassigned*))
+      (set! a b)
+      (set! b 3)
+      a)))
+#+end_src
+
+#+RESULTS:
+: *unassigned*
+
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  ((lambda ()
+    (let ((u '*unassigned*)
+          (v '*unassigned*))
+      (let ((a u) (b v)))
+      (set! u v)
+      (set! v 3)
+      a)))
+#+end_src
+
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (letrec ((a b)
+           (b 3))
+    a)
+#+end_src
+
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (let ((fact (lambda (n) (if (= n 1) 1 (* n (fact (- n 1)))))))
+    (fact 10))
+#+end_src
+
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (letrec ((fact (lambda (n) (if (= n 1) 1 (* n (fact (- n 1)))))))
+    (fact 10))
+#+end_src
+
+** Exercise 4.16 
+*** a
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  ((eq? var (car vars)) (if (eq? (car vals) '*unassigned*)
+                            (error "Accessed an Unassigned value")
+                            (car vals)))
+#+end_src
+*** b
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (scan-out-defines body)
+    (let* ((defines (filter definition? body))
+           (bodies (caddr body))
+           (vars (map car defines))
+           (vals (map cadr defines))
+           (unassigneds (map (lambda (var) (list var '*unassigned)) vars))
+           (sets (map (lambda (var val) (list 'set! var val)) vars vals)))
+      (make-let unassgineds (append sets bodies))))
+#+end_src
+** Exercise 4.19 
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (let ((a 1))
+    (define (f x)
+      (define b (+ a x))
+      (define a 5)
+      (+ a b))
+    (f 10))
+#+end_src
+
+#+RESULTS:
+: a: undefined;
+:  cannot use before initialization
+:   context...:
+:    /var/folders/_3/nwly65x92d13qp765t5gqbl40000gn/T/babel-uTMuc1/org-babel-Zjfo2g.rkt:4:0
+:    body of "/var/folders/_3/nwly65x92d13qp765t5gqbl40000gn/T/babel-uTMuc1/org-babel-Zjfo2g.rkt"
+
+** Exercise 4.20 
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (body-letrec exp) (caddr exp))
+  (define (bindings-letrec exp) (cadr exp))
+
+  (define (letrec->let exp)
+    (let* ((vars (map car (bindings-letrec exp)))
+           (vals (map cadr (bindings-letrec exp)))
+           (unbounds (map (lambda (var) (list var '*unassigned*)) vars))
+           (sets (map (lambda (var) '(set! var val)) vars vals)))
+      (make-let unbounds (append sets (body-letrec exp)))))
+#+end_src
+
+** Exercise 4.21 
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  ((lambda (n)
+     ((lambda (fact) (fact fact n))
+      (lambda (ft k) (if (= k 1) 1 (* k (ft ft (- k 1)))))))
+   4)
+#+end_src
+
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (fact n)
+    (let ((f3 (lambda (ft k) (if (= k 1) 1 (* k (ft ft (- k 1)))))))
+      (let ((f2 (lambda (fact) (fact fact n))))
+        (let ((f1 (lambda (n) (f2 f3) n)))
+          (f1 n)))))
+
+  (fact 9)
+#+end_src
+
+#+RESULTS:
+: 9
+
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (f x)
+    ((lambda (even? odd?) (even? even? odd? x))
+     (lambda (ev? od? n)
+       (if (= n 0) true (od? ev? od? (- n 1))))
+     (lambda (ev? od? n)
+       (if (= n 0) false (ev? ev? od? (- n 1))))))
+
+  (f 101)
+#+end_src
+
+#+RESULTS:
+: #f
+
+** Exercise 4.0 
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+#+end_src
+** Test 
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+#+end_src

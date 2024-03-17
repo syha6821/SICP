@@ -1,0 +1,385 @@
+#+TITLE: The Elements of Programming
+[[http://sarabander.github.io/sicp/html/index.xhtml][INDEX]]
+[[http://sarabander.github.io/sicp/html/1_002e1.xhtml#g_t1_002e1][BOOKMARK]]
+
+#+begin_src racket :lang sicp :results output
+#+end_src
+
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+#+end_src
+
+#+RESULTS:
+: 1.7320508075688772
+
+** test
+#+begin_src racket :lang sicp :results output
+  (cos 3)
+#+end_src
+
+#+RESULTS:
+: -0.9899924966004454
+
+** notes
+#+begin_src racket :lang sicp :results output
+  (define (square x) (* x x))
+  (define (sum-of-squares x y) (+ (square x) (square y)))
+  (define (f a) (sum-of-squares (+ a 1) (* a 2)))
+  (f 5)
+#+end_src
+
+#+RESULTS:
+: 136
+
+#+begin_src racket :lang sicp :results output
+  (define (~ x y) (+ x y))
+  (~ 1 3)
+#+end_src
+
+#+RESULTS:
+: 4
+
+
+#+begin_src racket :lang sicp :results output
+10
+(+ 5 3 4)
+(- 9 1)
+(/ 6 2)
+(+ (* 2 4) (- 4 6))
+(define a 3)
+(define b (+ a 1))
+(+ a b (* a b))
+(= a b)
+(if (and (> b a) (< b (* a b)))
+    b
+    a)
+(cond ((= a 4) 6)
+      ((= b 4) (+ 6 7 a))
+      (else 25))
+(+ 2 (if (> b a) b a))
+(* (cond ((> a b) a)
+         ((< a b) b)
+         (else -1))
+   (+ a 1))
+#+end_src
+
+** Exercise 1.1
+#+RESULTS:
+#+begin_example
+10
+12
+8
+3
+6
+19
+#f
+4
+16
+6
+16
+#+end_example
+
+** Exercise 1.2
+#+begin_src racket :lang sicp :results output
+  (define up (+ 5 4 (- 2 (- 3 (+ 6 (/ 4 5))))))
+  (define down (* 3 (- 6 2) (- 2 7)))
+  (/ up down)
+#+end_src
+
+#+RESULTS:
+: -37/150
+
+** Exercise 1.3
+- Define a procedure that takes three numbers as arguments
+  and returns the sum of the squares of the two larger numbers.
+#+begin_src racket :lang sicp :results output
+  (define (square x) (* x x) )
+
+  (define (func a b c)
+    (cond ( ( and (< a b) (< a c) ) (+ (square b) (square c) ) )
+          ( ( and (< b a) (< b c) ) (+ (square a) (square c) ) )
+          ( ( and (< c a) (< c b) ) (+ (square a) (square b) ) ) ) )
+
+  (func 5 2 3)
+#+end_src
+
+#+RESULTS:
+: 34
+
+** Exercise 1.4
+- Observe that our model of evaluation allows for combinations whose operators are compound expressions.
+  Use this observation to describe the behavior of the following procedure:
+#+begin_src racket :lang sicp :results output
+  (define (a-plus-abs-b a b)
+    ((if (> b 0) + -) a b))
+  (a-plus-abs-b -4 -2)
+#+end_src
+
+#+RESULTS:
+: -2
+
+** Exercise 1.5
+- Ben Bitdiddle has invented a test to determine
+  whether the interpreter he is faced with is
+  using applicative-order evaluation or normal-order evaluation.
+  He defines the following two procedures:
+
+#+begin_src racket :lang sicp :results output
+(define (p) (p))
+
+(define (test x y) 
+  (if (= x 0) 
+      0 
+      y))
+#+end_src
+Then he evaluates the expression
+#+begin_src racket :lang sicp :results output
+(test 0 (p))
+#+end_src
+- What behavior will Ben observe with an interpreter that uses applicative-order evaluation?
+  What behavior will he observe with an interpreter that uses normal-order evaluation?
+  Explain your answer.
+  (Assume that the evaluation rule for the special form if is the same whether the interpreter is using normal or applicative order
+  - The predicate expression is evaluated first, and the result determines whether to evaluate the consequent or the alternative expression.)
+
+
+
+
+** Square Roots by Newton's Method
+#+NAME: sqrt-book
+#+begin_src racket :lang sicp :results output :noweb-ref yes 
+  (define (square x) (* x x))
+  (define (abs x)
+    (if (< x 0) (- x) x))
+
+  (define (average x y) 
+    (/ (+ x y) 2))
+
+  (define (improve guess x)
+    (average guess (/ x guess)))
+
+  (define (good-enough? guess x)
+    (< (abs (- (square guess) x)) 0.001))
+
+  (define (sqrt-iter guess x)
+    (if (good-enough? guess x)
+        guess
+        (sqrt-iter (improve guess x) x)))
+
+  (define (sqr x)
+    (sqrt-iter 1.0 x))
+
+#+end_src
+
+#+RESULTS: sqrt-book
+: 2.0000000929222947
+
+#+NAME: sqrt
+#+begin_src racket :lang sicp :results output :noweb-ref yes 
+  (define (square x) (* x x))
+  (define (abs x)
+    (if (< x 0) (- x) x))
+
+  (define first-guess 1)
+  (define guess-margin 0.001)
+
+  (define (better-guess guess x)
+    (/ (+ guess (/ x guess)) 2))
+
+  (define (is-good-enough guess x)
+    (if (< (abs (- x (square guess))) guess-margin) #t #f))
+
+  (define (iter-sqrt guess x) (if (is-good-enough guess x) guess (iter-sqrt (better-guess guess x) x)))
+  (define (sqr x)
+    (iter-sqrt 1.0 x))
+#+end_src
+
+#+RESULTS: sqrt
+
+#+begin_src racket :lang sicp :results output :noweb yes
+  <<sqrt>>
+  (sqr 3)
+#+end_src
+
+#+RESULTS:
+: 1.7321428571428572
+
+
+** Exercise 1.6
+Alyssa P. Hacker doesn’t see why /if/ needs to be provided as a special form.
+“Why can’t I just define it as an ordinary procedure in terms of /cond/?” she asks.
+Alyssa’s friend Eva Lu Ator claims this can indeed be done, and she defines a new version of /if/ :
+
+#+NAME: Exercise_1.6
+#+begin_src racket :lang sicp :results output :noweb yes
+  <<sqrt-book>>
+  (define (new-if predicate 
+                  then-clause 
+                  else-clause)
+    (cond (predicate then-clause)
+          (else else-clause)))
+#+end_src
+
+#+RESULTS: Exercise
+
+Eva demonstrates the program for Alyssa:
+
+#+begin_src racket :lang sicp :results output :noweb yes
+  <<Exercise_1.6>>
+  (new-if (= 2 3) 0 5)
+
+  (new-if (= 1 1) 0 5)
+
+#+end_src
+
+#+RESULTS:
+: 5
+: 0
+
+Delighted, Alyssa uses new-if to rewrite the square-root program:
+
+#+begin_src racket :lang sicp :results output :noweb yes
+  <<Exercise_1.6>>
+  (define (sqrt-iter-k guess x)
+    (new-if (good-enough? guess x)
+            guess
+            (sqrt-iter-k (improve guess x) x)))
+
+  ;; (sqrt-iter-k 1.0 4.0)
+  ;; (improve 1.0 2.0)
+  ;; (sqrt-iter 1.0 2.0)
+#+end_src
+
+#+RESULTS:
+: 2.0000000929222947
+
+
+What happens when Alyssa attempts to use this to compute square roots? Explain.
+
+** Exercies 1.7
+The /good-enough?/ test used in computing square roots will not be very effective for finding the square roots of very small numbers.
+*- Because /very small numbers/ are already small enough to be caught on /good-enough/.*
+
+Also, in real computers, arithmetic operations are almost always performed with limited precision.
+This makes our test inadequate for very large numbers.
+
+Explain these statements, with examples showing how the test fails for small and large numbers.
+
+An alternative strategy for implementing /good-enough?/ is
+to watch how guess changes from one iteration to the next and to stop when the change is a very small fraction of the guess.
+
+Design a square-root procedure that uses this kind of end test.
+Does this work better for small and large numbers?
+
+#+begin_src racket :lang sicp :results output :noweb yes
+  <<sqrt-book>>
+  (sqr 0.00004)
+  (sqrt 0.00004)
+
+  (sqr 1234567890123)
+  (square 1111111.1061109055)
+#+end_src
+
+#+RESULTS:
+: 0.03167509508023218
+: 0.006324555320336759
+: 1111111.1061109055
+: 1234567890123.0
+
+#+NAME: better-sqrt
+#+begin_src racket :lang sicp :results output :noweb-ref yes 
+    (define (square x) (* x x))
+    (define (abs x)
+      (if (< x 0) (- x) x))
+
+    (define (average x y) 
+      (/ (+ x y) 2))
+
+    (define (improve guess x)
+      (average guess (/ x guess)))
+
+    (define (good-enough? guess before-guess x)
+      (< (/ (abs (- before-guess guess)) before-guess) 0.00000000001))
+
+    (define (sqrt-iter guess before-guess x)
+      (if (good-enough? guess before-guess x)
+          guess
+          (sqrt-iter (improve guess x) guess x)))
+
+    (define (sqr x)
+      (sqrt-iter 1.0 0.1 x))
+
+#+end_src
+
+#+begin_src racket :lang sicp :results output :noweb yes
+  <<sqrt-book>>
+  (sqr 0.00004)
+  (sqrt 0.00004)
+  
+  (sqr 1093832094801840918049)
+#+end_src
+
+#+RESULTS:
+: 0.006324555320407774
+: 0.006324555320336759
+: 33073136516.383453
+: 1234567890123.0
+
+#+begin_src racket :lang sicp :results output :noweb yes
+  <<better-sqrt>>
+  (sqr 0.00004)
+  (sqrt 0.00004)
+
+  (sqr 1093832094801840918049)
+  (sqrt 1093832094801840918049)
+  (square 1111111.1061109055)
+#+end_src
+
+#+RESULTS:
+: 0.006324555320336759
+: 0.006324555320336759
+: 33073132521.759125
+: 33073132521.759125
+: 1234567890123.0
+
+
+** Exercise 1.8
+Newton’s method for cube roots is based on the fact that if y
+ is an approximation to the cube root of x
+, then a better approximation is given by the value
+
+#+ATTR_ORG: :width 100
+[[./image_exercise_1_8.png]]
+
+#+NAME: cube-sqrt
+#+begin_src racket :lang sicp :results output :noweb-ref yes 
+  (define (square x) (* x x))
+  (define (abs x)
+    (if (< x 0) (- x) x))
+
+  (define (improve guess x)
+    (/ (+ (/ x (square guess)) (* 2 guess)) 3))
+
+  (define (good-enough? guess before-guess x)
+    (< (/ (abs (- before-guess guess)) before-guess) 0.00000000001))
+
+  (define (sqrt-iter guess before-guess x)
+    (if (good-enough? guess before-guess x)
+        guess
+        (sqrt-iter (improve guess x) guess x)))
+
+  (define (cube-sqrt x)
+    (sqrt-iter 1.0 0.1 x))
+
+#+end_src
+
+#+begin_src racket :lang sicp :results output :noweb yes
+  <<cube-sqrt>>
+  (cube-sqrt 27)
+#+end_src
+
+#+RESULTS:
+: 3.0
+
+Use this formula to implement a cube-root procedure analogous to the square-root procedure.
+(In 1.3.4 we will see how to implement Newton’s method in general as an abstraction of these square-root and cube-root procedures.)
+

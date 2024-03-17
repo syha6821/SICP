@@ -1,0 +1,1157 @@
+#+TITLE: Hierarchical Data and the Closure Property
+
+* Pre
+** Exercise snippet
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+#+end_src
+** Snippets
+#+begin_src racket :lang sicp :results output
+#+end_src
+
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+#+end_src
+** pre-requistes
+#+NAME:prime
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (square x) (* x x))
+  (define (smallest-divisor n) (find-divisor n 2))
+  (define (find-divisor n test-divisor)
+    (cond ((> (square test-divisor) n) n)
+          ((divides? test-divisor n) test-divisor)
+          (else (find-divisor n (+ test-divisor 1 )))))
+  (define (divides? a b) (= (remainder b a) 0))
+
+  (define (prime? n)
+    (and (not (= n 1)) (= n (smallest-divisor n))))
+#+end_src
+
+#+NAME:fib
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (fib n)
+    (cond ((= n 0) 0)
+          ((= n 1) 1)
+          (else (+
+                 (fib (- n 1))
+                 (fib (- n 2))))))
+#+end_src
+
+#+NAME:square
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (square x) (* x x))
+#+end_src
+
+#+NAME:gcd
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (gcd a b)
+    (if (= b 0)
+        a
+        (gcd b (remainder a b))))
+#+end_src
+
+#+NAME:average
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (average a b) (/ (+ a b) 2))
+#+end_src
+
+#+NAME:pow
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (pow x n)
+    (if (= n 1)
+        x
+        (* x (pow x (dec n)))))
+#+end_src
+** Test 
+#+begin_src racket :lang sicp :results output
+#+end_src
+
+#+RESULTS:
+: #f
+
+* 2.2.1 Representing Sequences
+** Figure 2.4
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define seq (list 3 9 4 1))
+  seq
+  (car seq)
+  (cdr seq)
+  (cons 8 seq)
+#+end_src
+
+#+RESULTS:
+: (3 9 4 1)
+: 3
+: (9 4 1)
+: (8 3 9 4 1)
+
+** Exercise 2.17
+#+NAME:last-pair
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (last-pair items)
+    (list-ref items (dec (length items))))
+#+end_src
+
+#+RESULTS:
+: 4
+: 34
+
+** Exercise 2.18
+#+name:reverse
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (reverse items)
+    (if (null? items) nil (append (reverse (cdr items)) (list (car items)))))
+#+end_src
+
+#+RESULTS: reverse
+: #<procedure:mmap>
+
+** Exercise 2.19
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define us-coins (list 50 10 25 1 5))
+  (define kr-coins (list 5000 1000 500 100 10))
+  (define uk-coins (list 100 50 20 10 5 2 1 0.5))
+
+  (define (first-denomination coins) (car coins))
+  (define (except-first-denomination coins) (cdr coins))
+  (define (no-more? coins) (null? coins))
+
+  (define (change-coin amount coin-list)
+    (cond ((= amount 0) 1)
+          ((< amount 0) 0)
+          ((no-more? coin-list) 0)
+          (else (+ (change-coin amount (except-first-denomination coin-list))
+                   (change-coin (- amount (first-denomination coin-list)) coin-list)))))
+
+  (change-coin 100 us-coins)
+  (change-coin 100 kr-coins)
+      #+end_src
+
+#+RESULTS:
+: /var/folders/_3/nwly65x92d13qp765t5gqbl40000gn/T/babel-goB8fF/org-babel-ymTTSu.rkt:21:0: shuffle: unbound identifier
+:   in: shuffle
+:   location...:
+:    /var/folders/_3/nwly65x92d13qp765t5gqbl40000gn/T/babel-goB8fF/org-babel-ymTTSu.rkt:21:0
+
+** Exercise 2.20
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (same-parity first . l)
+    (define (filter-parity parity? l)
+      (cond ((null? l) nil)
+            ((parity? (car l)) (append (list (car l)) (filter-parity parity? (cdr l))))
+            (else (filter-parity parity? (cdr l)))))
+    (cond ((odd? first) (append (list first) (filter-parity odd? l)))
+          ((even? first) (append (list first) (filter-parity even? l)))
+          (else l)))
+
+  (same-parity 1 3 4 5 9 10 11)
+#+end_src
+
+#+RESULTS:
+: (1 3 5 9 11)
+: (1 2 4 5)
+
+** scale-list
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (scale-list items factor)
+    (if (null? items) nil (cons (* (car items) factor) (scale-list (cdr items) factor))))
+  (scale-list (list 1 3 5 7) 3)
+#+end_src
+
+#+RESULTS:
+: (3 9 15 21)
+
+** map
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (map proc items)
+    (if (null? items) nil (cons (proc (car items)) (map proc (cdr items)))))
+  (map (lambda (x) (* x 3))(list 1 3 5 7))
+#+end_src
+
+#+RESULTS:
+: (3 9 15 21)
+
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (* 2 (list 1 3 5))
+#+end_src
+
+#+RESULTS:
+: *: contract violation
+:   expected: number?
+:   given: (1 3 5)
+:   context...:
+:    body of "/var/folders/_3/nwly65x92d13qp765t5gqbl40000gn/T/babel-goB8fF/org-babel-I0vZxC.rkt"
+
+** Exercise 2.21
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<square>>
+  (define (square-list items)
+    (if (null? items) nil (cons (square (car items)) (square-list (cdr items)))))
+  (square-list (list 1 2 3 4))
+#+end_src
+
+#+RESULTS:
+: (1 4 9 16)
+
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<square>>
+  (define (square-list items)
+    (map square items))
+  (square-list (list 1 2 3 4))
+#+end_src
+
+#+RESULTS:
+: (1 4 9 16)
+
+** Exercise 2.22
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<square>>
+  (define (square-list items)
+    (define (iter things answer)
+      (if (null? things)
+          answer
+          (iter (cdr things)
+                (append answer
+                        (list (square (car things)))))))
+    (iter items nil))
+  (square-list (list 1 2 3 4 5))
+#+end_src
+
+#+RESULTS:
+: (1 4 9 16 25)
+: (() . 1)
+
+** Exercise 2.23
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (for-each proc items)
+    (if (null? items) #t
+        ((lambda () (proc (car items)) (for-each proc (cdr items))))))
+
+  (for-each (lambda (x) (newline) (display x)) (list 57 321 88))
+#+end_src
+
+#+RESULTS:
+: 
+: 57
+: 321
+: 88#t
+
+
+* 2.2.2 Hierarchical Structures
+** Figure 2.5
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define a (cons (list 1 2) (list 3 4)))
+  a
+#+end_src
+
+#+RESULTS:
+: ((1 2) 3 4)
+
+** Figure 2.6 
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define x (cons (list 1 2) (list 3 4)))
+  (define (count-leaves l)
+    (cond ((null? l) 0)
+          ((number? l) 1)
+          (else (+ (count-leaves (car l)) (count-leaves (cdr l))))
+          ))
+  (count-leaves x)
+  (count-leaves (list x x))
+#+end_src
+
+#+RESULTS:
+: 4
+: 8
+
+** Exercise 2.24
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (list 1 (list 2 (list 3 4)))
+#+end_src
+
+#+RESULTS:
+: (1 (2 (3 4)))
+
+** Exercise 2.25
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define first (list 1 3 (list 5 7) 9))
+  (define second (list (list 7)))
+  (define third (list 1 (list 2 (list 3 (list 4 (list 5 (list 6 7)))))))
+  first
+  second
+  third
+  (car (cdr (car (cdr (cdr first)))))
+  (car (car second))
+  (cadr (cadr (cadr (cadr (cadr (cadr third))))))
+#+end_src
+
+#+RESULTS:
+: (1 3 (5 7) 9)
+: ((7))
+: (1 (2 (3 (4 (5 (6 7))))))
+: 7
+: 7
+: 7
+
+** Exercise 2.26
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define x (list 1 2 3))
+  (define y (list 4 5 6))
+
+  (append x y)
+  (cons x y)
+  (list x y)
+#+end_src
+
+#+RESULTS:
+: (1 2 3 4 5 6)
+: ((1 2 3) 4 5 6)
+: ((1 2 3) (4 5 6))
+
+** Exercise 2.27
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (reverse items)
+    (if (null? items) nil (append (reverse (cdr items)) (list (car items)))))
+
+  (define x (list (list 1 2) (list 3 4)))
+  (define y (list (list 1 2) (list (list 3 4) (list 5 6 7))))
+  (define z (list 1 (list (list 3 4) 7)))
+  (define k (list (list (list 1 2) (list 3 4) 5) (list 6 (list 7 8) 9) (list 10)))
+
+  (define (deep-reverse items)
+    (cond ((null? items) nil)
+          ((not (pair? items)) items)
+          (else (append (deep-reverse (cdr items)) (list (deep-reverse (car items)))))    ))
+
+  (deep-reverse x)
+  (deep-reverse y)
+  (deep-reverse k)
+#+end_src
+
+#+RESULTS:
+: ((4 3) (2 1))
+: (((7 6 5) (4 3)) (2 1))
+: ((10) (9 (8 7) 6) (5 (4 3) (2 1)))
+
+
+
+** Exercise 2.24(re)
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define l (list 1 (list 2 (list 3 4))))
+  l
+  (car (cdr (car (cdr (car (cdr l))))))
+#+end_src
+
+#+RESULTS:
+: (1 (2 (3 4)))
+: 4
+: 4
+
+** Exercise 2.25(re)
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define l1 (list 1 3 (list 5 7) 9))
+  (cadr (cadr (cdr l1)))
+
+  (define l2 (list (list 7)))
+  (caar l2)
+
+  (define l3 (list 1 (list 2 (list 3 (list 4 (list 5 (list 6 7)))))))
+  l3
+  (cadr (cadr (cadr (cadr (cadr (cadr l3))))))
+#+end_src
+
+#+RESULTS:
+: 7
+: 7
+: (1 (2 (3 (4 (5 (6 7))))))
+: 7
+
+** Exercise 2.27(re)
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+    (define (reverse l)
+      (if (null? l) nil (append (reverse (cdr l)) (list (car l)))))
+#+end_src
+
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<reverse>>
+  (define x (list (list 1 2) (list 3 4)))
+  (define y (list (list 1 2) (list (list 3 4) (list 5 6 7))))
+
+  (define (deep-reverse l)
+    (cond ((null? l) nil)
+          ((not (pair? l)) l)
+          (else (append (deep-reverse (cdr l)) (list (deep-reverse (car l)))))))
+
+  (deep-reverse x)
+  (deep-reverse y)
+  (deep-reverse (list (list (list 1 2) (list 3 4) 5) (list 6 (list 7 8) 9) (list 10)))
+
+#+end_src
+
+#+RESULTS:
+: ((4 3) (2 1))
+: (((7 6 5) (4 3)) (2 1))
+: ((10) (9 (8 7) 6) (5 (4 3) (2 1)))
+
+** Exercise 2.28
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define x (list (list 1 2) (list 3 4)))
+  (define (fringe tree)
+    (cond ((null? tree) nil)
+          ((not (pair? tree)) (list tree))
+          (else (append (fringe (car tree)) (fringe (cdr tree))))))
+
+  (fringe (list x x x x))
+#+end_src
+
+#+RESULTS:
+: (1 2 3 4 1 2 3 4 1 2 3 4 1 2 3 4)
+
+** Exercise 2.29
+#+NAME:binary-mobile
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (make-mobile left right) (list left right))
+  (define (make-branch length structure) (list length structure))
+  (define (left-branch mobile) (car mobile))
+  (define (right-branch mobile) (car (cdr mobile)))
+  (define (branch-length branch) (car branch))
+  (define (branch-structure branch) (car (cdr branch)))
+
+  (define (total-weight mobile)
+    (if (not (pair? mobile))
+        mobile
+        (+
+         (total-weight (branch-structure (left-branch mobile)))
+         (total-weight (branch-structure (right-branch mobile))))))
+  (define (torque branch) (* (branch-length branch) (total-weight (branch-structure branch))))
+  (define (balanced? mobile) (= (torque (left-branch mobile)) (torque (right-branch mobile))))
+#+end_src
+
+#+NAME:binary-mobile-changed
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (make-mobile left right) (cons left right))
+  (define (make-branch length structure) (cons length structure))
+  (define (left-branch mobile) (car mobile))
+  (define (right-branch mobile) (cdr mobile))
+  (define (branch-length branch) (car branch))
+  (define (branch-structure branch) (cdr branch))
+
+  (define (total-weight mobile)
+    (if (not (pair? mobile))
+        mobile
+        (+
+         (total-weight (branch-structure (left-branch mobile)))
+         (total-weight (branch-structure (right-branch mobile))))))
+  (define (torque branch) (* (branch-length branch) (total-weight (branch-structure branch))))
+  (define (balanced? mobile) (= (torque (left-branch mobile)) (torque (right-branch mobile))))
+#+end_src
+
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<binary-mobile-changed>>
+  (define mobile1
+    (make-mobile (make-branch 10 1)
+                 (make-branch 2 5)))
+
+  (define mobile2
+    (make-mobile (make-branch 10 1)
+                 (make-branch 2 (make-mobile (make-branch 4 1)
+                                             (make-branch 1 4)))))
+
+  (define mobile3
+    (make-mobile (make-branch 9 1)
+                 (make-branch 2 4)))
+
+  (total-weight mobile1)
+  (total-weight mobile2)
+  (total-weight mobile3)
+
+  (balanced? mobile1)
+  (balanced? mobile2)
+  (balanced? mobile3)
+#+end_src
+
+#+RESULTS:
+: 6
+: 6
+: 5
+: #t
+: #t
+: #f
+
+
+
+** Mapping over lists
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (scale-list items factor)
+    (if (null? items) nil (cons (* (car items) factor) (scale-list (cdr items) factor))))
+  (define (map items proc)
+    (if (null? items) nil (cons (proc (car items)) (map (cdr items) proc))))
+  (scale-list (list 3 5 6) 5)
+  (map (list 3 5 6) (lambda (x) (* x x)))
+#+end_src
+
+#+RESULTS:
+: (15 25 30)
+: (9 25 36)
+
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (scale-list items factor)
+    (if (null? items) nil (cons (* (car items) factor) (scale-list (cdr items) factor))))
+  (define (scale-tree tree factor)
+    (cond ((null? tree) tree)
+          ((not (pair? tree)) (* tree factor))
+          (else (cons (scale-tree (car tree) factor) (scale-tree (cdr tree) factor)))))
+
+  (define (scale-tree-m tree factor)
+    (map
+     (lambda (sub-tree) (if (not (pair? sub-tree)) (* factor sub-tree) (scale-tree-m sub-tree factor)))
+     tree))
+
+  (scale-list (list 1 3 5) 5)
+  (scale-tree (list 1 (list 2 4 9) 5) 5)
+  (scale-tree-m (list 1 (list 2 4 9) 5) 5)
+#+end_src
+
+#+RESULTS:
+: (5 15 25)
+: (5 (10 20 45) 25)
+: (5 (10 20 45) 25)
+
+
+** Exercise 2.30
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<square>>
+  (define (square-tree l)
+    (cond ((null? l) nil)
+          ((not (pair? l)) (square l))
+          (else (cons (square-tree (car l)) (square-tree (cdr l))))))
+
+  (square-tree (list 1 (list 2 (list 3 4) 5) (list 6 7)))
+#+end_src
+
+#+RESULTS:
+: (1 (4 (9 16) 25) (36 49))
+
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<square>>
+  (define (square-tree tree)
+    (map (lambda (sub-tree) (if (pair? sub-tree) (square-tree sub-tree) (square sub-tree))) tree))
+
+  (square-tree (list 1 (list 2 (list 3 4) 5) (list 6 7)))
+#+end_src
+
+#+RESULTS:
+: (1 (4 (9 16) 25) (36 49))
+
+** Exercise 2.31
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<square>>
+  (define (tree-map proc tree)
+    (map (lambda (sub-tree) (if (pair? sub-tree) (tree-map proc sub-tree) (proc sub-tree))) tree))
+  (define (square-tree tree) (tree-map square tree))
+  (square-tree (list 1 (list 2 (list 3 4) 5) (list 6 7)))
+#+end_src
+
+#+RESULTS:
+: (1 (4 (9 16) 25) (36 49))
+
+** Exercise 2.32
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (subsets set)
+    (if (null? set) (list nil) (append (subsets (cdr set)) (map (lambda (subset) (append (list (car set)) subset)) (subsets (cdr set))))))
+
+  (subsets (list 1 2 3))
+  (subsets (list 1 2))
+  (subsets (list 2))
+#+end_src
+
+#+RESULTS:
+: (() (3) (2) (2 3) (1) (1 3) (1 2) (1 2 3))
+: (() (2) (1) (1 2))
+: (() (2))
+
+** Exercise snippet
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+#+end_src
+
+
+* 2.2.3 Sequences as Conventional Interface
+** Example sum-odd-squares
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<square>>
+  (define (sum-odd-squares tree)
+    (cond ((null? tree) 0)
+          ((not (pair? tree)) (square tree))
+          (else (+ (sum-odd-squares (car tree)) (sum-odd-squares (cdr tree))))))
+#+end_src
+
+#+RESULTS:
+: 84
+
+** Example even-fibs
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<fib>>
+  (define (even-fibs n)
+    (define (next k)
+      (let ((fibk (fib k)))
+        (if (odd? (fib k)) (append nil (next (inc k)))
+            (if (> k n) nil (append (list (fib k)) (next (inc k))))
+            )))
+    (next 0))
+
+  (even-fibs 20)
+   #+end_src
+
+#+RESULTS:
+: (0 2 8 34 144 610 2584)
+
+** Filter
+#+name:filter
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (filter predicate sequence)
+    (cond ((null? sequence) nil)
+          ((predicate (car sequence)) (cons (car sequence) (filter predicate (cdr sequence))))
+          (else (filter predicate (cdr sequence)))))
+#+end_src
+
+#+RESULTS:
+: (1 3 5)
+
+** Accumulate
+#+name:accumulate
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (accumulate op initial seq)
+    (if (null? seq) initial (op (car seq) (accumulate op initial (cdr seq)))) )
+#+end_src
+
+** Enumerate
+#+name:enumerate-interval
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (enumerate-interval low high)
+    (if (> low high) nil (cons low (enumerate-interval (inc low) high))))
+#+end_src
+
+#+name:enumerate-tree
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (enumerate-tree tree)
+    (cond ((null? tree) nil)
+          ((not (pair? tree)) (list tree))
+          (else (append (enumerate-tree (car tree)) (enumerate-tree (cdr tree))))
+          ))
+#+end_src
+
+** even-fibs (signal)
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<filter>>
+  <<accumulate>>
+  <<enumerate-interval>>
+  <<fib>>
+
+  (define (even-fibs n)
+    (accumulate cons nil (filter even? (map fib (enumerate-interval 0 n)))))
+
+  (even-fibs 10)
+#+end_src
+
+#+RESULTS:
+: (0 2 8 34)
+
+** sum-odd-square (signal)
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<filter>>
+  <<accumulate>>
+  <<enumerate-tree>>
+  <<square>>
+
+  (define (sum-odd-square l)
+    (accumulate + 0 (map square (filter odd? (enumerate-tree l)))))
+
+  (sum-odd-square (list 1 3 5))
+#+end_src
+
+#+RESULTS:
+: 35
+
+** list-fib-squares
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<filter>>
+  <<accumulate>>
+  <<enumerate-interval>>
+  <<square>>
+  <<fib>>
+
+  (define (list-fib-squares n)
+    (accumulate cons nil (map square (map fib (enumerate-interval 0 n)))))
+
+  (list-fib-squares 10)
+#+end_src
+
+#+RESULTS:
+: (0 1 1 4 9 25 64 169 441 1156 3025)
+
+** product-of-squares-of-odd-elements
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<filter>>
+  <<accumulate>>
+  <<enumerate-tree>>
+  <<square>>
+  <<fib>>
+
+  (define (product-of-squares-of-odd-elements seq)
+    (accumulate * 1 (map square (filter odd? (enumerate-tree seq)))))
+
+  (product-of-squares-of-odd-elements (list 1 2 3 4 5))
+#+end_src
+
+#+RESULTS:
+: 225
+
+** Exercise 2.33
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<accumulate>>
+  (define (map proc seq)
+    (accumulate (lambda (x y) (append (list (proc x)) y)) nil seq))
+#+end_src
+
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<accumulate>>
+  (define (append seq1 seq2)
+    (accumulate cons seq2 seq1))
+#+end_src
+
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<accumulate>>
+  (define (length seq)
+    (accumulate (lambda (x y) (inc y)) 0 seq))
+
+  (length (list 2 3 4 5 6 7 8))
+#+end_src
+
+#+RESULTS:
+: 7
+
+
+** Exercise 2.34
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<accumulate>>
+  (define (horner-eval x coefficient-sequence)
+    (accumulate (lambda (this-coeff higher-terms) (+ this-coeff (* x (horner-eval x (cdr coefficient-sequence))))) 0 coefficient-sequence))
+
+  (horner-eval 2 (list 1 2 3))
+#+end_src
+
+#+RESULTS:
+: 17
+
+
+
+
+
+** Exercise 2.35
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<accumulate>>
+  (define (count-leaves t)
+    (accumulate
+     +
+     0
+     (map
+      (lambda (sub-tree)
+        (cond ((null? sub-tree) 0)
+              ((not (pair? sub-tree)) 1)
+              (else (count-leaves sub-tree))))
+      t)))
+
+  (count-leaves (list 1 2 3 (list 3 45) 5))
+#+end_src
+
+#+RESULTS:
+: 6
+
+
+
+
+
+
+
+
+
+
+
+
+
+** Exercise 2.36
+#+name:accumulate-n
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<accumulate>>
+  (define (accumulate-n op init seqs)
+    (if (null? (car seqs))
+        nil
+        (cons (accumulate op init (map (lambda (seq) (car seq)) seqs))
+              (accumulate-n op init (map (lambda (seq) (cdr seq)) seqs)))))
+#+end_src
+
+** Exercise 2.37
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<accumulate-n>>
+  (define m1 (list (list 1 2) (list 3 4)))
+  (define m2 (list (list 5 6) (list 7 8)))
+  (define v1 (list 5 6))
+
+  (define (dot-product v w)
+    (accumulate + 0 (map * v w)))
+
+  (define (matrix-*-vector m v)
+    (map (lambda (v-i) (dot-product v-i v)) m))
+
+  (define (transpose m) (accumulate-n cons nil m))
+
+  (define (matrix-*-matrix m n)
+    (let ((cols (transpose n)))
+      (map (lambda (v) (matrix-*-vector cols v)) m)))
+
+
+  (matrix-*-matrix m1 m2)
+  (transpose (list (list 1 2 3) (list 4 5 6) (list 7 8 9)))
+#+end_src
+
+#+RESULTS:
+: ((19 22) (43 50))
+: ((1 4 7) (2 5 8) (3 6 9))
+
+
+** Exercise 2.38
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<accumulate>>
+  (define fold-right accumulate)
+  (define (fold-left op initial sequence)
+    (define (iter result rest)
+      (if (null? rest)
+          result
+          (iter (op result (car rest))
+                (cdr rest))))
+    (iter initial sequence))
+
+  (fold-right / 1 (list 1 2 3))
+  (fold-left / 1 (list 1 2 3))
+  (fold-right list nil (list 1 2 3))
+  (fold-left list nil (list 1 2 3))
+#+end_src
+
+#+RESULTS:
+: 3/2
+: 1/6
+: (1 (2 (3 ())))
+: (((() 1) 2) 3)
+
+#+name:fold
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<accumulate>>
+  (define fold-right accumulate)
+  (define (fold-left op init seq)
+    (cond ((null? seq) init)
+          (else (op (fold-left op init (cdr seq)) (car seq)))))
+#+end_src
+
+** Exercise 2.39
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<fold>>
+  (define (reverse seq)
+    (fold-right (lambda (x y) (append y (list x))) nil seq))
+#+end_src
+
+#+RESULTS:
+: (3 2 1)
+
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<fold>>
+  (define (reverse seq)
+    (fold-left (lambda (x y) (append x (list y))) nil seq))
+
+  (reverse (list 1 3 4))
+#+end_src
+
+#+RESULTS:
+: (4 3 1)
+
+
+
+** prime-sum-pairs
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<enumerate-interval>>
+  <<accumulate>>
+  <<filter>>
+  <<prime>>
+
+  (define (i-enum n) (enumerate-interval 2 n))
+  (define (j-enum i) (enumerate-interval 1 (dec i)))
+  (define (ij-enum n) (accumulate (lambda (i rest) (append (map (lambda (j) (cons i j)) (j-enum i)) rest)) nil (i-enum n)))
+  (define (sum-is-prime-pairs n)
+    (filter (lambda (ij) (prime? (+ (car ij) (cdr ij)))) (ij-enum n)))
+
+  (sum-is-prime-pairs 6)
+#+end_src
+
+#+RESULTS:
+: ((2 . 1) (3 . 2) (4 . 1) (4 . 3) (5 . 2) (6 . 1) (6 . 5))
+
+
+** Flat-Map
+#+name:flatmap
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<accumulate>>
+  (define (flatmap proc seq) (accumulate append nil (map proc seq)))
+#+end_src
+
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<flatmap>>
+  <<enumerate-interval>>
+  <<prime>>
+  <<filter>>
+  (define (ij n) (flatmap (lambda (i) (map (lambda (j) (list i j)) (enumerate-interval 1 (dec i)))) (enumerate-interval 1 n)))
+  (define (prime-sum? pair) (prime? (+ (car pair) (cadr pair))))
+  (define (make-pair-sum pair) (list (car pair) (cadr pair) (+ (car pair) (cadr pair))))
+
+  (define (prime-sum-pairs n)
+    (map make-pair-sum (filter prime-sum? (ij n))))
+
+  (prime-sum-pairs 6)
+#+end_src
+
+#+RESULTS:
+: ((2 1 3) (3 2 5) (4 1 5) (4 3 7) (5 2 7) (6 1 7) (6 5 11))
+
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<flatmap>>
+  (define (rotation ls)
+    (define (rotate l n)
+      (if (= n (length ls))
+          nil
+          (append (list l) (rotate (append (cdr l) (list (car l))) (inc n)))))
+    (rotate ls 0))
+
+  (define (permut set)
+    (cond ((<= (length set) 2) (rotation set))
+          (else
+           (flatmap
+            (lambda (rotated)
+              (map (lambda (permuted) (cons (car rotated) permuted)) (permut (cdr rotated))))
+            (rotation set)))))
+
+  (permut (list 1 2 2))
+#+end_src
+
+#+RESULTS:
+: ((1 2 2) (1 2 2) (2 2 1) (2 1 2) (2 1 2) (2 2 1))
+
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<filter>>
+  <<flatmap>>
+
+  (define (remove item seq)
+    (filter (lambda (x) (not (= x item))) seq))
+
+  (define (permutations s)
+    (if (null? s)
+        (list nil)
+        (flatmap (lambda (x)
+                   (map (lambda (p) (cons x p)) (permutations (remove x s)))) s)))
+
+  (permutations (list 1 2 2))
+#+end_src
+
+#+RESULTS:
+: ((1 2) (1 2) (2 1) (2 1))
+
+
+** subset
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (subsets set)
+    (if (null? set)
+        (list nil)
+        (append (map (lambda (subs) (append (list (car set)) subs)) (subsets (cdr set)))
+                (subsets (cdr set)))))
+
+  (subsets (list 1 2 3 4))
+#+end_src
+
+#+RESULTS:
+: ((1 2 3 4) (1 2 3) (1 2 4) (1 2) (1 3 4) (1 3) (1 4) (1) (2 3 4) (2 3) (2 4) (2) (3 4) (3) (4) ())
+
+
+
+** Exercise 2.40
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<enumerate-interval>>
+  <<filter>>
+  <<flatmap>>
+  <<prime>>
+
+  (define (unique-pairs n)
+    (flatmap (lambda (i) (map (lambda (j) (list i j)) (enumerate-interval 1 (dec i)))) (enumerate-interval 2 n)))
+  (define (prime-sum-pairs n)
+    (filter (lambda (p) (prime? (+ (car p) (cadr p)))) (unique-pairs n)))
+
+  (prime-sum-pairs 6)
+#+end_src
+
+#+RESULTS:
+: ((2 1) (3 2) (4 1) (4 3) (5 2) (6 1) (6 5))
+
+** Exercise 2.41
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<filter>>
+  <<enumerate-interval>>
+  <<flatmap>>
+
+  (define (unique-triples n)
+    (flatmap (lambda (i) (flatmap (lambda (j) (map (lambda (k) (list i j k)) (enumerate-interval 1 (dec j)))) (enumerate-interval 2 (dec i)))) (enumerate-interval 3 n)))
+
+  (define (sum-of-triples t)
+    (+ (car t) (cadr t) (caddr t)))
+
+  (define (find-triples n s)
+    (filter (lambda (t) (= s (sum-of-triples t))) (unique-triples n)))
+
+  (find-triples 12 12)
+
+  (define (sum-of-list l)
+    (accumulate + 0 l))
+#+end_src
+
+#+RESULTS:
+: ((5 4 3) (6 4 2) (6 5 1) (7 3 2) (7 4 1) (8 3 1) (9 2 1))
+: 6
+: 6
+
+** Exercise 2.42
+#+name:pos
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (pos row column) (list row column))
+  (define (row pos) (car pos))
+  (define (col pos) (cadr pos))
+#+end_src
+
+#+name:safe
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (row-safe before new)
+    (not (= (row before) (row new))))
+
+  (define (col-safe before new)
+    (not (= (col before) (col new))))
+
+  (define (diagonal-safe before new)
+    (not (= (abs (- (row before) (row new))) (abs (- (col before) (col new))))))
+
+  (define (check-safe p1 p2)
+    (and (row-safe p1 p2) (col-safe p1 p2) (diagonal-safe p1 p2)))
+#+end_src
+
+
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<enumerate-interval>>
+  <<pos>>
+  <<safe>>
+  <<flatmap>>
+  <<filter>>
+
+  (define (safe-queen new seq)
+    (accumulate (lambda (x y) (and (check-safe new x) y)) true seq))
+
+  (define (k-cols k n)
+    (map (lambda (e) (list e k)) (enumerate-interval 1 n)))
+
+  (define (queen n)
+    (define (queen-cols k)
+      (cond ((< k 1) (list nil))
+            (else (filter (lambda (x) (not (null? x)))
+                          (flatmap (lambda (k-1-queens) (map (lambda (kcol) (if (safe-queen kcol k-1-queens) (append k-1-queens (list kcol)) nil)) (k-cols k n))) (queen-cols (dec k)))))
+            ))
+    (queen-cols n))
+
+  (queen 4)
+  (queen 8)
+#+end_src
+
+#+RESULTS:
+: (((2 1) (4 2) (1 3) (3 4)) ((3 1) (1 2) (4 3) (2 4)))
+: (((1 1) (5 2) (8 3) (6 4) (3 5) (7 6) (2 7) (4 8)) ((1 1) (6 2) (8 3) (3 4) (7 5) (4 6) (2 7) (5 8)) ((1 1) (7 2) (4 3) (6 4) (8 5) (2 6) (5 7) (3 8)) ((1 1) (7 2) (5 3) (8 4) (2 5) (4 6) (6 7) (3 8)) ((2 1) (4 2) (6 3) (8 4) (3 5) (1 6) (7 7) (5 8)) ((2 1) (5 2) (7 3) (1 4) (3 5) (8 6) (6 7) (4 8)) ((2 1) (5 2) (7 3) (4 4) (1 5) (8 6) (6 7) (3 8)) ((2 1) (6 2) (1 3) (7 4) (4 5) (8 6) (3 7) (5 8)) ((2 1) (6 2) (8 3) (3 4) (1 5) (4 6) (7 7) (5 8)) ((2 1) (7 2) (3 3) (6 4) (8 5) (5 6) (1 7) (4 8)) ((2 1) (7 2) (5 3) (8 4) (1 5) (4 6) (6 7) (3 8)) ((2 1) (8 2) (6 3) (1 4) (3 5) (5 6) (7 7) (4 8)) ((3 1) (1 2) (7 3) (5 4) (8 5) (2 6) (4 7) (6 8)) ((3 1) (5 2) (2 3) (8 4) (1 5) (7 6) (4 7) (6 8)) ((3 1) (5 2) (2 3) (8 4) (6 5) (4 6) (7 7) (1 8)) ((3 1) (5 2) (7 3) (1 4) (4 5) (2 6) (8 7) (6 8)) ((3 1) (5 2) (8 3) (4 4) (1 5) (7 6) (2 7) (6 8)) ((3 1) (6 2) (2 3) (5 4) (8 5) (1 6) (7 7) (4 8)) ((3 1) (6 2) (2 3) (7 4) (1 5) (4 6) (8 7) (5 8)) ((3 1) (6 2) (2 3) (7 4) (5 5) (1 6) (8 7) (4 8)) ((3 1) (6 2) (4 3) (1 4) (8 5) (5 6) (7 7) (2 8)) ((3 1) (6 2) (4 3) (2 4) (8 5) (5 6) (7 7) (1 8)) ((3 1) (6 2) (8 3) (1 4) (4 5) (7 6) (5 7) (2 8)) ((3 1) (6 2) (8 3) (1 4) (5 5) (7 6) (2 7) (4 8)) ((3 1) (6 2) (8 3) (2 4) (4 5) (1 6) (7 7) (5 8)) ((3 1) (7 2) (2 3) (8 4) (5 5) (1 6) (4 7) (6 8)) ((3 1) (7 2) (2 3) (8 4) (6 5) (4 6) (1 7) (5 8)) ((3 1) (8 2) (4 3) (7 4) (1 5) (6 6) (2 7) (5 8)) ((4 1) (1 2) (5 3) (8 4) (2 5) (7 6) (3 7) (6 8)) ((4 1) (1 2) (5 3) (8 4) (6 5) (3 6) (7 7) (2 8)) ((4 1) (2 2) (5 3) (8 4) (6 5) (1 6) (3 7) (7 8)) ((4 1) (2 2) (7 3) (3 4) (6 5) (8 6) (1 7) (5 8)) ((4 1) (2 2) (7 3) (3 4) (6 5) (8 6) (5 7) (1 8)) ((4 1) (2 2) (7 3) (5 4) (1 5) (8 6) (6 7) (3 8)) ((4 1) (2 2) (8 3) (5 4) (7 5) (1 6) (3 7) (6 8)) ((4 1) (2 2) (8 3) (6 4) (1 5) (3 6) (5 7) (7 8)) ((4 1) (6 2) (1 3) (5 4) (2 5) (8 6) (3 7) (7 8)) ((4 1) (6 2) (8 3) (2 4) (7 5) (1 6) (3 7) (5 8)) ((4 1) (6 2) (8 3) (3 4) (1 5) (7 6) (5 7) (2 8)) ((4 1) (7 2) (1 3) (8 4) (5 5) (2 6) (6 7) (3 8)) ((4 1) (7 2) (3 3) (8 4) (2 5) (5 6) (1 7) (6 8)) ((4 1) (7 2) (5 3) (2 4) (6 5) (1 6) (3 7) (8 8)) ((4 1) (7 2) (5 3) (3 4) (1 5) (6 6) (8 7) (2 8)) ((4 1) (8 2) (1 3) (3 4) (6 5) (2 6) (7 7) (5 8)) ((4 1) (8 2) (1 3) (5 4) (7 5) (2 6) (6 7) (3 8)) ((4 1) (8 2) (5 3) (3 4) (1 5) (7 6) (2 7) (6 8)) ((5 1) (1 2) (4 3) (6 4) (8 5) (2 6) (7 7) (3 8)) ((5 1) (1 2) (8 3) (4 4) (2 5) (7 6) (3 7) (6 8)) ((5 1) (1 2) (8 3) (6 4) (3 5) (7 6) (2 7) (4 8)) ((5 1) (2 2) (4 3) (6 4) (8 5) (3 6) (1 7) (7 8)) ((5 1) (2 2) (4 3) (7 4) (3 5) (8 6) (6 7) (1 8)) ((5 1) (2 2) (6 3) (1 4) (7 5) (4 6) (8 7) (3 8)) ((5 1) (2 2) (8 3) (1 4) (4 5) (7 6) (3 7) (6 8)) ((5 1) (3 2) (1 3) (6 4) (8 5) (2 6) (4 7) (7 8)) ((5 1) (3 2) (1 3) (7 4) (2 5) (8 6) (6 7) (4 8)) ((5 1) (3 2) (8 3) (4 4) (7 5) (1 6) (6 7) (2 8)) ((5 1) (7 2) (1 3) (3 4) (8 5) (6 6) (4 7) (2 8)) ((5 1) (7 2) (1 3) (4 4) (2 5) (8 6) (6 7) (3 8)) ((5 1) (7 2) (2 3) (4 4) (8 5) (1 6) (3 7) (6 8)) ((5 1) (7 2) (2 3) (6 4) (3 5) (1 6) (4 7) (8 8)) ((5 1) (7 2) (2 3) (6 4) (3 5) (1 6) (8 7) (4 8)) ((5 1) (7 2) (4 3) (1 4) (3 5) (8 6) (6 7) (2 8)) ((5 1) (8 2) (4 3) (1 4) (3 5) (6 6) (2 7) (7 8)) ((5 1) (8 2) (4 3) (1 4) (7 5) (2 6) (6 7) (3 8)) ((6 1) (1 2) (5 3) (2 4) (8 5) (3 6) (7 7) (4 8)) ((6 1) (2 2) (7 3) (1 4) (3 5) (5 6) (8 7) (4 8)) ((6 1) (2 2) (7 3) (1 4) (4 5) (8 6) (5 7) (3 8)) ((6 1) (3 2) (1 3) (7 4) (5 5) (8 6) (2 7) (4 8)) ((6 1) (3 2) (1 3) (8 4) (4 5) (2 6) (7 7) (5 8)) ((6 1) (3 2) (1 3) (8 4) (5 5) (2 6) (4 7) (7 8)) ((6 1) (3 2) (5 3) (7 4) (1 5) (4 6) (2 7) (8 8)) ((6 1) (3 2) (5 3) (8 4) (1 5) (4 6) (2 7) (7 8)) ((6 1) (3 2) (7 3) (2 4) (4 5) (8 6) (1 7) (5 8)) ((6 1) (3 2) (7 3) (2 4) (8 5) (5 6) (1 7) (4 8)) ((6 1) (3 2) (7 3) (4 4) (1 5) (8 6) (2 7) (5 8)) ((6 1) (4 2) (1 3) (5 4) (8 5) (2 6) (7 7) (3 8)) ((6 1) (4 2) (2 3) (8 4) (5 5) (7 6) (1 7) (3 8)) ((6 1) (4 2) (7 3) (1 4) (3 5) (5 6) (2 7) (8 8)) ((6 1) (4 2) (7 3) (1 4) (8 5) (2 6) (5 7) (3 8)) ((6 1) (8 2) (2 3) (4 4) (1 5) (7 6) (5 7) (3 8)) ((7 1) (1 2) (3 3) (8 4) (6 5) (4 6) (2 7) (5 8)) ((7 1) (2 2) (4 3) (1 4) (8 5) (5 6) (3 7) (6 8)) ((7 1) (2 2) (6 3) (3 4) (1 5) (4 6) (8 7) (5 8)) ((7 1) (3 2) (1 3) (6 4) (8 5) (5 6) (2 7) (4 8)) ((7 1) (3 2) (8 3) (2 4) (5 5) (1 6) (6 7) (4 8)) ((7 1) (4 2) (2 3) (5 4) (8 5) (1 6) (3 7) (6 8)) ((7 1) (4 2) (2 3) (8 4) (6 5) (1 6) (3 7) (5 8)) ((7 1) (5 2) (3 3) (1 4) (6 5) (8 6) (2 7) (4 8)) ((8 1) (2 2) (4 3) (1 4) (7 5) (5 6) (3 7) (6 8)) ((8 1) (2 2) (5 3) (3 4) (1 5) (7 6) (4 7) (6 8)) ((8 1) (3 2) (1 3) (6 4) (2 5) (5 6) (7 7) (4 8)) ((8 1) (4 2) (1 3) (3 4) (6 5) (2 6) (7 7) (5 8)))
+
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<enumerate-interval>>
+  <<pos>>
+  <<flatmap>>
+  <<filter>>
+  <<safe>>
+
+  (define (safe? k positions)
+    (let ((kth (list-ref positions (dec k))))
+      (accumulate (lambda (x y) (and (if (equal? x kth) true (check-safe x kth)) y)) true positions)))
+
+  (define empty-board nil)
+
+  (define (adjoin-position new-row k rest-of-queens)
+    (append rest-of-queens (list (pos new-row k))))
+
+  (define (queens board-size)
+    (define (queen-cols k)
+      (if (= k 0)
+          (list empty-board)
+          (filter
+           (lambda (positions) (safe? k positions))
+           (flatmap
+            (lambda (rest-of-queens)
+              (map (lambda (new-row)
+                     (adjoin-position
+                      new-row k rest-of-queens))
+                   (enumerate-interval 1 board-size)))
+            (queen-cols (- k 1))))))
+    (queen-cols board-size))
+
+  (queens 8)
+#+end_src
+
+#+RESULTS:
+: (((1 1) (5 2) (8 3) (6 4) (3 5) (7 6) (2 7) (4 8)) ((1 1) (6 2) (8 3) (3 4) (7 5) (4 6) (2 7) (5 8)) ((1 1) (7 2) (4 3) (6 4) (8 5) (2 6) (5 7) (3 8)) ((1 1) (7 2) (5 3) (8 4) (2 5) (4 6) (6 7) (3 8)) ((2 1) (4 2) (6 3) (8 4) (3 5) (1 6) (7 7) (5 8)) ((2 1) (5 2) (7 3) (1 4) (3 5) (8 6) (6 7) (4 8)) ((2 1) (5 2) (7 3) (4 4) (1 5) (8 6) (6 7) (3 8)) ((2 1) (6 2) (1 3) (7 4) (4 5) (8 6) (3 7) (5 8)) ((2 1) (6 2) (8 3) (3 4) (1 5) (4 6) (7 7) (5 8)) ((2 1) (7 2) (3 3) (6 4) (8 5) (5 6) (1 7) (4 8)) ((2 1) (7 2) (5 3) (8 4) (1 5) (4 6) (6 7) (3 8)) ((2 1) (8 2) (6 3) (1 4) (3 5) (5 6) (7 7) (4 8)) ((3 1) (1 2) (7 3) (5 4) (8 5) (2 6) (4 7) (6 8)) ((3 1) (5 2) (2 3) (8 4) (1 5) (7 6) (4 7) (6 8)) ((3 1) (5 2) (2 3) (8 4) (6 5) (4 6) (7 7) (1 8)) ((3 1) (5 2) (7 3) (1 4) (4 5) (2 6) (8 7) (6 8)) ((3 1) (5 2) (8 3) (4 4) (1 5) (7 6) (2 7) (6 8)) ((3 1) (6 2) (2 3) (5 4) (8 5) (1 6) (7 7) (4 8)) ((3 1) (6 2) (2 3) (7 4) (1 5) (4 6) (8 7) (5 8)) ((3 1) (6 2) (2 3) (7 4) (5 5) (1 6) (8 7) (4 8)) ((3 1) (6 2) (4 3) (1 4) (8 5) (5 6) (7 7) (2 8)) ((3 1) (6 2) (4 3) (2 4) (8 5) (5 6) (7 7) (1 8)) ((3 1) (6 2) (8 3) (1 4) (4 5) (7 6) (5 7) (2 8)) ((3 1) (6 2) (8 3) (1 4) (5 5) (7 6) (2 7) (4 8)) ((3 1) (6 2) (8 3) (2 4) (4 5) (1 6) (7 7) (5 8)) ((3 1) (7 2) (2 3) (8 4) (5 5) (1 6) (4 7) (6 8)) ((3 1) (7 2) (2 3) (8 4) (6 5) (4 6) (1 7) (5 8)) ((3 1) (8 2) (4 3) (7 4) (1 5) (6 6) (2 7) (5 8)) ((4 1) (1 2) (5 3) (8 4) (2 5) (7 6) (3 7) (6 8)) ((4 1) (1 2) (5 3) (8 4) (6 5) (3 6) (7 7) (2 8)) ((4 1) (2 2) (5 3) (8 4) (6 5) (1 6) (3 7) (7 8)) ((4 1) (2 2) (7 3) (3 4) (6 5) (8 6) (1 7) (5 8)) ((4 1) (2 2) (7 3) (3 4) (6 5) (8 6) (5 7) (1 8)) ((4 1) (2 2) (7 3) (5 4) (1 5) (8 6) (6 7) (3 8)) ((4 1) (2 2) (8 3) (5 4) (7 5) (1 6) (3 7) (6 8)) ((4 1) (2 2) (8 3) (6 4) (1 5) (3 6) (5 7) (7 8)) ((4 1) (6 2) (1 3) (5 4) (2 5) (8 6) (3 7) (7 8)) ((4 1) (6 2) (8 3) (2 4) (7 5) (1 6) (3 7) (5 8)) ((4 1) (6 2) (8 3) (3 4) (1 5) (7 6) (5 7) (2 8)) ((4 1) (7 2) (1 3) (8 4) (5 5) (2 6) (6 7) (3 8)) ((4 1) (7 2) (3 3) (8 4) (2 5) (5 6) (1 7) (6 8)) ((4 1) (7 2) (5 3) (2 4) (6 5) (1 6) (3 7) (8 8)) ((4 1) (7 2) (5 3) (3 4) (1 5) (6 6) (8 7) (2 8)) ((4 1) (8 2) (1 3) (3 4) (6 5) (2 6) (7 7) (5 8)) ((4 1) (8 2) (1 3) (5 4) (7 5) (2 6) (6 7) (3 8)) ((4 1) (8 2) (5 3) (3 4) (1 5) (7 6) (2 7) (6 8)) ((5 1) (1 2) (4 3) (6 4) (8 5) (2 6) (7 7) (3 8)) ((5 1) (1 2) (8 3) (4 4) (2 5) (7 6) (3 7) (6 8)) ((5 1) (1 2) (8 3) (6 4) (3 5) (7 6) (2 7) (4 8)) ((5 1) (2 2) (4 3) (6 4) (8 5) (3 6) (1 7) (7 8)) ((5 1) (2 2) (4 3) (7 4) (3 5) (8 6) (6 7) (1 8)) ((5 1) (2 2) (6 3) (1 4) (7 5) (4 6) (8 7) (3 8)) ((5 1) (2 2) (8 3) (1 4) (4 5) (7 6) (3 7) (6 8)) ((5 1) (3 2) (1 3) (6 4) (8 5) (2 6) (4 7) (7 8)) ((5 1) (3 2) (1 3) (7 4) (2 5) (8 6) (6 7) (4 8)) ((5 1) (3 2) (8 3) (4 4) (7 5) (1 6) (6 7) (2 8)) ((5 1) (7 2) (1 3) (3 4) (8 5) (6 6) (4 7) (2 8)) ((5 1) (7 2) (1 3) (4 4) (2 5) (8 6) (6 7) (3 8)) ((5 1) (7 2) (2 3) (4 4) (8 5) (1 6) (3 7) (6 8)) ((5 1) (7 2) (2 3) (6 4) (3 5) (1 6) (4 7) (8 8)) ((5 1) (7 2) (2 3) (6 4) (3 5) (1 6) (8 7) (4 8)) ((5 1) (7 2) (4 3) (1 4) (3 5) (8 6) (6 7) (2 8)) ((5 1) (8 2) (4 3) (1 4) (3 5) (6 6) (2 7) (7 8)) ((5 1) (8 2) (4 3) (1 4) (7 5) (2 6) (6 7) (3 8)) ((6 1) (1 2) (5 3) (2 4) (8 5) (3 6) (7 7) (4 8)) ((6 1) (2 2) (7 3) (1 4) (3 5) (5 6) (8 7) (4 8)) ((6 1) (2 2) (7 3) (1 4) (4 5) (8 6) (5 7) (3 8)) ((6 1) (3 2) (1 3) (7 4) (5 5) (8 6) (2 7) (4 8)) ((6 1) (3 2) (1 3) (8 4) (4 5) (2 6) (7 7) (5 8)) ((6 1) (3 2) (1 3) (8 4) (5 5) (2 6) (4 7) (7 8)) ((6 1) (3 2) (5 3) (7 4) (1 5) (4 6) (2 7) (8 8)) ((6 1) (3 2) (5 3) (8 4) (1 5) (4 6) (2 7) (7 8)) ((6 1) (3 2) (7 3) (2 4) (4 5) (8 6) (1 7) (5 8)) ((6 1) (3 2) (7 3) (2 4) (8 5) (5 6) (1 7) (4 8)) ((6 1) (3 2) (7 3) (4 4) (1 5) (8 6) (2 7) (5 8)) ((6 1) (4 2) (1 3) (5 4) (8 5) (2 6) (7 7) (3 8)) ((6 1) (4 2) (2 3) (8 4) (5 5) (7 6) (1 7) (3 8)) ((6 1) (4 2) (7 3) (1 4) (3 5) (5 6) (2 7) (8 8)) ((6 1) (4 2) (7 3) (1 4) (8 5) (2 6) (5 7) (3 8)) ((6 1) (8 2) (2 3) (4 4) (1 5) (7 6) (5 7) (3 8)) ((7 1) (1 2) (3 3) (8 4) (6 5) (4 6) (2 7) (5 8)) ((7 1) (2 2) (4 3) (1 4) (8 5) (5 6) (3 7) (6 8)) ((7 1) (2 2) (6 3) (3 4) (1 5) (4 6) (8 7) (5 8)) ((7 1) (3 2) (1 3) (6 4) (8 5) (5 6) (2 7) (4 8)) ((7 1) (3 2) (8 3) (2 4) (5 5) (1 6) (6 7) (4 8)) ((7 1) (4 2) (2 3) (5 4) (8 5) (1 6) (3 7) (6 8)) ((7 1) (4 2) (2 3) (8 4) (6 5) (1 6) (3 7) (5 8)) ((7 1) (5 2) (3 3) (1 4) (6 5) (8 6) (2 7) (4 8)) ((8 1) (2 2) (4 3) (1 4) (7 5) (5 6) (3 7) (6 8)) ((8 1) (2 2) (5 3) (3 4) (1 5) (7 6) (4 7) (6 8)) ((8 1) (3 2) (1 3) (6 4) (2 5) (5 6) (7 7) (4 8)) ((8 1) (4 2) (1 3) (3 4) (6 5) (2 6) (7 7) (5 8)))
+
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<enumerate-interval>>
+  <<pos>>
+  <<flatmap>>
+  <<filter>>
+  <<safe>>
+
+  (define (safe? k positions)
+    (let ((kth (list-ref positions (dec k))))
+      (accumulate (lambda (x y) (and (if (equal? x kth) true (check-safe x kth)) y)) true positions)))
+
+  (define empty-board nil)
+
+  (define (adjoin-position new-row k rest-of-queens)
+    (append rest-of-queens (list (pos new-row k))))
+
+  (define (queens board-size)
+    (define (queen-cols k)
+      (if (= k 0)
+          (list empty-board)
+          (filter
+           (lambda (positions) (safe? k positions))
+           (flatmap
+            (lambda (new-row)
+              (map (lambda (rest-of-queens)
+                     (adjoin-position
+                      new-row k rest-of-queens))
+                   (queen-cols (- k 1))))
+            (enumerate-interval 1 board-size)))))
+    (queen-cols board-size))
+
+
+  (queens 8)
+#+end_src
+
+#+RESULTS:
+: (((4 1) (2 2) (7 3) (3 4) (6 5) (8 6) (5 7) (1 8)) ((5 1) (2 2) (4 3) (7 4) (3 5) (8 6) (6 7) (1 8)) ((3 1) (5 2) (2 3) (8 4) (6 5) (4 6) (7 7) (1 8)) ((3 1) (6 2) (4 3) (2 4) (8 5) (5 6) (7 7) (1 8)) ((5 1) (7 2) (1 3) (3 4) (8 5) (6 6) (4 7) (2 8)) ((4 1) (6 2) (8 3) (3 4) (1 5) (7 6) (5 7) (2 8)) ((3 1) (6 2) (8 3) (1 4) (4 5) (7 6) (5 7) (2 8)) ((5 1) (3 2) (8 3) (4 4) (7 5) (1 6) (6 7) (2 8)) ((5 1) (7 2) (4 3) (1 4) (3 5) (8 6) (6 7) (2 8)) ((4 1) (1 2) (5 3) (8 4) (6 5) (3 6) (7 7) (2 8)) ((3 1) (6 2) (4 3) (1 4) (8 5) (5 6) (7 7) (2 8)) ((4 1) (7 2) (5 3) (3 4) (1 5) (6 6) (8 7) (2 8)) ((6 1) (4 2) (2 3) (8 4) (5 5) (7 6) (1 7) (3 8)) ((6 1) (4 2) (7 3) (1 4) (8 5) (2 6) (5 7) (3 8)) ((1 1) (7 2) (4 3) (6 4) (8 5) (2 6) (5 7) (3 8)) ((6 1) (8 2) (2 3) (4 4) (1 5) (7 6) (5 7) (3 8)) ((6 1) (2 2) (7 3) (1 4) (4 5) (8 6) (5 7) (3 8)) ((4 1) (7 2) (1 3) (8 4) (5 5) (2 6) (6 7) (3 8)) ((5 1) (8 2) (4 3) (1 4) (7 5) (2 6) (6 7) (3 8)) ((4 1) (8 2) (1 3) (5 4) (7 5) (2 6) (6 7) (3 8)) ((2 1) (7 2) (5 3) (8 4) (1 5) (4 6) (6 7) (3 8)) ((1 1) (7 2) (5 3) (8 4) (2 5) (4 6) (6 7) (3 8)) ((2 1) (5 2) (7 3) (4 4) (1 5) (8 6) (6 7) (3 8)) ((4 1) (2 2) (7 3) (5 4) (1 5) (8 6) (6 7) (3 8)) ((5 1) (7 2) (1 3) (4 4) (2 5) (8 6) (6 7) (3 8)) ((6 1) (4 2) (1 3) (5 4) (8 5) (2 6) (7 7) (3 8)) ((5 1) (1 2) (4 3) (6 4) (8 5) (2 6) (7 7) (3 8)) ((5 1) (2 2) (6 3) (1 4) (7 5) (4 6) (8 7) (3 8)) ((6 1) (3 2) (7 3) (2 4) (8 5) (5 6) (1 7) (4 8)) ((2 1) (7 2) (3 3) (6 4) (8 5) (5 6) (1 7) (4 8)) ((7 1) (3 2) (1 3) (6 4) (8 5) (5 6) (2 7) (4 8)) ((5 1) (1 2) (8 3) (6 4) (3 5) (7 6) (2 7) (4 8)) ((1 1) (5 2) (8 3) (6 4) (3 5) (7 6) (2 7) (4 8)) ((3 1) (6 2) (8 3) (1 4) (5 5) (7 6) (2 7) (4 8)) ((6 1) (3 2) (1 3) (7 4) (5 5) (8 6) (2 7) (4 8)) ((7 1) (5 2) (3 3) (1 4) (6 5) (8 6) (2 7) (4 8)) ((7 1) (3 2) (8 3) (2 4) (5 5) (1 6) (6 7) (4 8)) ((5 1) (3 2) (1 3) (7 4) (2 5) (8 6) (6 7) (4 8)) ((2 1) (5 2) (7 3) (1 4) (3 5) (8 6) (6 7) (4 8)) ((3 1) (6 2) (2 3) (5 4) (8 5) (1 6) (7 7) (4 8)) ((6 1) (1 2) (5 3) (2 4) (8 5) (3 6) (7 7) (4 8)) ((8 1) (3 2) (1 3) (6 4) (2 5) (5 6) (7 7) (4 8)) ((2 1) (8 2) (6 3) (1 4) (3 5) (5 6) (7 7) (4 8)) ((5 1) (7 2) (2 3) (6 4) (3 5) (1 6) (8 7) (4 8)) ((3 1) (6 2) (2 3) (7 4) (5 5) (1 6) (8 7) (4 8)) ((6 1) (2 2) (7 3) (1 4) (3 5) (5 6) (8 7) (4 8)) ((3 1) (7 2) (2 3) (8 4) (6 5) (4 6) (1 7) (5 8)) ((6 1) (3 2) (7 3) (2 4) (4 5) (8 6) (1 7) (5 8)) ((4 1) (2 2) (7 3) (3 4) (6 5) (8 6) (1 7) (5 8)) ((7 1) (1 2) (3 3) (8 4) (6 5) (4 6) (2 7) (5 8)) ((1 1) (6 2) (8 3) (3 4) (7 5) (4 6) (2 7) (5 8)) ((3 1) (8 2) (4 3) (7 4) (1 5) (6 6) (2 7) (5 8)) ((6 1) (3 2) (7 3) (4 4) (1 5) (8 6) (2 7) (5 8)) ((7 1) (4 2) (2 3) (8 4) (6 5) (1 6) (3 7) (5 8)) ((4 1) (6 2) (8 3) (2 4) (7 5) (1 6) (3 7) (5 8)) ((2 1) (6 2) (1 3) (7 4) (4 5) (8 6) (3 7) (5 8)) ((2 1) (4 2) (6 3) (8 4) (3 5) (1 6) (7 7) (5 8)) ((3 1) (6 2) (8 3) (2 4) (4 5) (1 6) (7 7) (5 8)) ((6 1) (3 2) (1 3) (8 4) (4 5) (2 6) (7 7) (5 8)) ((8 1) (4 2) (1 3) (3 4) (6 5) (2 6) (7 7) (5 8)) ((4 1) (8 2) (1 3) (3 4) (6 5) (2 6) (7 7) (5 8)) ((2 1) (6 2) (8 3) (3 4) (1 5) (4 6) (7 7) (5 8)) ((7 1) (2 2) (6 3) (3 4) (1 5) (4 6) (8 7) (5 8)) ((3 1) (6 2) (2 3) (7 4) (1 5) (4 6) (8 7) (5 8)) ((4 1) (7 2) (3 3) (8 4) (2 5) (5 6) (1 7) (6 8)) ((4 1) (8 2) (5 3) (3 4) (1 5) (7 6) (2 7) (6 8)) ((3 1) (5 2) (8 3) (4 4) (1 5) (7 6) (2 7) (6 8)) ((4 1) (2 2) (8 3) (5 4) (7 5) (1 6) (3 7) (6 8)) ((5 1) (7 2) (2 3) (4 4) (8 5) (1 6) (3 7) (6 8)) ((7 1) (4 2) (2 3) (5 4) (8 5) (1 6) (3 7) (6 8)) ((8 1) (2 2) (4 3) (1 4) (7 5) (5 6) (3 7) (6 8)) ((7 1) (2 2) (4 3) (1 4) (8 5) (5 6) (3 7) (6 8)) ((5 1) (1 2) (8 3) (4 4) (2 5) (7 6) (3 7) (6 8)) ((4 1) (1 2) (5 3) (8 4) (2 5) (7 6) (3 7) (6 8)) ((5 1) (2 2) (8 3) (1 4) (4 5) (7 6) (3 7) (6 8)) ((3 1) (7 2) (2 3) (8 4) (5 5) (1 6) (4 7) (6 8)) ((3 1) (1 2) (7 3) (5 4) (8 5) (2 6) (4 7) (6 8)) ((8 1) (2 2) (5 3) (3 4) (1 5) (7 6) (4 7) (6 8)) ((3 1) (5 2) (2 3) (8 4) (1 5) (7 6) (4 7) (6 8)) ((3 1) (5 2) (7 3) (1 4) (4 5) (2 6) (8 7) (6 8)) ((5 1) (2 2) (4 3) (6 4) (8 5) (3 6) (1 7) (7 8)) ((6 1) (3 2) (5 3) (8 4) (1 5) (4 6) (2 7) (7 8)) ((5 1) (8 2) (4 3) (1 4) (3 5) (6 6) (2 7) (7 8)) ((4 1) (2 2) (5 3) (8 4) (6 5) (1 6) (3 7) (7 8)) ((4 1) (6 2) (1 3) (5 4) (2 5) (8 6) (3 7) (7 8)) ((6 1) (3 2) (1 3) (8 4) (5 5) (2 6) (4 7) (7 8)) ((5 1) (3 2) (1 3) (6 4) (8 5) (2 6) (4 7) (7 8)) ((4 1) (2 2) (8 3) (6 4) (1 5) (3 6) (5 7) (7 8)) ((6 1) (3 2) (5 3) (7 4) (1 5) (4 6) (2 7) (8 8)) ((6 1) (4 2) (7 3) (1 4) (3 5) (5 6) (2 7) (8 8)) ((4 1) (7 2) (5 3) (2 4) (6 5) (1 6) (3 7) (8 8)) ((5 1) (7 2) (2 3) (6 4) (3 5) (1 6) (4 7) (8 8)))
+
+
+
+** Exercise snippet
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+#+end_src
+
+

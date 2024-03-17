@@ -1,0 +1,259 @@
+** Test
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  combine4
+#+end_src
+
+#+RESULTS:
+: /var/folders/_3/nwly65x92d13qp765t5gqbl40000gn/T/babel-s7wOjh/org-babel-kaIwEo.rkt:4:0: combine4: unbound identifier
+:   in: combine4
+:   location...:
+:    /var/folders/_3/nwly65x92d13qp765t5gqbl40000gn/T/babel-s7wOjh/org-babel-kaIwEo.rkt:4:0
+
+** Exercise 2.44
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+#lang sicp
+(#%require sicp-pict)
+
+(define (right-split painter n)
+  (if (= n 0)
+      painter
+      (let ((smaller (right-split painter (- n 1))))
+        (beside painter (below smaller smaller)))))
+
+(define (up-split painter n)
+  (if (= n 0)
+      painter 
+      (let ((up (up-split painter (dec 1))))
+        (below painter (beside up up)))))
+
+(define (corner-split painter n)
+  (if (= n 0)
+      painter
+      (let ((up (up-split painter (- n 1)))
+            (right (right-split painter (- n 1))))
+        (let ((top-left (beside up up))
+              (bottom-right (below right right))
+              (corner (corner-split painter (- n 1))))
+          (beside (below painter top-left)
+                  (below bottom-right corner))))))
+
+(paint (corner-split einstein 11))
+#+end_src
+
+** Exercise 2.46
+#+name:vector
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (make-vect x y) (cons x y))
+  (define (xcor-vect vect) (car vect))
+  (define (ycor-vect vect) (cdr vect))
+  (define (add-vect v1 v2)
+    (make-vect 
+     (+ (xcor-vect v1) (xcor-vect v2))
+     (+ (ycor-vect v1) (ycor-vect v2))))
+  (define (sub-vect v1 v2)
+    (make-vect 
+     (- (xcor-vect v1) (xcor-vect v2))
+     (- (ycor-vect v1) (ycor-vect v2))))
+  (define (scale-vect s v)
+    (make-vect 
+     (* s (xcor-vect v))
+     (* s (ycor-vect v))))
+#+end_src
+
+#+RESULTS: vector
+: (3 . 9)
+: (0 . 0)
+: (2 . 6)
+
+** Exercise 2.47
+make selectors for frame
+- origin-frame
+- edge1-frame
+- edge2-frame
+
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (make-frame origin edge1 edge2)
+    (list origin edge1 edge2))
+
+  (define (origin-frame origin)
+    (car origin))
+
+  (define (edge1-frame origin)
+    (cadr origin))
+
+  (define (edge2-frame origin)
+    (caddr origin))
+#+end_src
+
+#+RESULTS:
+
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (make-frame origin edge1 edge2)
+    (cons origin (cons edge1 edge2)))
+
+  (define (origin-frame origin)
+    (car origin))
+
+  (define (edge1-frame origin)
+    (cadr origin))
+
+  (define (edge2-frame origin)
+    (cddr origin))
+#+end_src
+
+#+RESULTS:
+: /var/folders/_3/nwly65x92d13qp765t5gqbl40000gn/T/babel-s7wOjh/org-babel-MgvwnJ.rkt:15:0: draw-line: unbound identifier
+:   in: draw-line
+:   location...:
+:    /var/folders/_3/nwly65x92d13qp765t5gqbl40000gn/T/babel-s7wOjh/org-babel-MgvwnJ.rkt:15:0
+
+** Exercise 2.48
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<vector>>
+  (define (make-segment start end)
+    (cons start end))
+  (define (start-segment segment)
+    (car segment))
+  (define (end-segment segment)
+    (cdr segment))
+#+end_src
+
+#+RESULTS:
+
+** Exercise 2.49
+a
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  #lang sicp
+  (#%require sicp-pict)
+
+  (define s1 (make-segment (make-vect 0 0) (make-vect 1 0)))
+  (define s2 (make-segment (make-vect 1 0) (make-vect 1 1)))
+  (define s3 (make-segment (make-vect 1 1) (make-vect 0 1)))
+  (define s4 (make-segment (make-vect 0 1) (make-vect 0 0)))
+
+  (paint (segments->painter (list s1 s2 s3 s4)))
+#+end_src
+
+b
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+#lang sicp
+(#%require sicp-pict)
+
+(define v1 (make-vect 0 0))
+(define v2 (make-vect 1 1))
+
+(define v3 (make-vect 0 1))
+(define v4 (make-vect 1 0))
+
+(define s1 (make-segment v1 v2))
+(define s2 (make-segment v3 v4))
+
+(paint (segments->painter (list s1 s2)))
+#+end_src
+
+c
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  #lang sicp
+  (#%require sicp-pict)
+
+  (define s1 (make-segment (make-vect 0 0.5) (make-vect 0.5 0)))
+  (define s2 (make-segment (make-vect 0.5 0) (make-vect 1 0.5)))
+  (define s3 (make-segment (make-vect 1 0.5) (make-vect 0.5 1)))
+  (define s4 (make-segment (make-vect 0.5 1) (make-vect 0 0.5)))
+
+  (paint (segments->painter (list s1 s2 s3 s4)))
+
+#+end_src
+
+d
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+#+end_src
+
+** Exercise 2.50
+flip-horiz
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (flip-vert painter)
+    (transform-painter painter
+                       (make-vect 0.0 1.0) ; new origin
+                       (make-vect 1.0 1.0) ; new end of edge1
+                       (make-vect 0.0 0.0)))
+
+  (paint (flip-vert einstein))
+
+  (define (flip-horiz painter)
+    (transform-painter painter
+                       (make-vect 1 0)
+                       (make-vect 0 0)
+                       (make-vect 1 1)))
+#+end_src
+
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (rotate180 painter)
+    (transform-painter painter
+                       (make-vect 1 1)
+                       (make-vect 0 1)
+                       (make-vect 1 0)))
+#+end_src
+
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (rotate270 painter)
+    (transform-painter painater
+                       (make-vect 1 0)
+                       (make-vect 1 1)
+                       (make-vect 0 0)))
+#+end_src
+
+** Exercise 2.51
+below
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (below painter1 painter2)
+    (let ((split-point (make-vect 0.0 0.5)))
+      (let ((paint-up
+             (transform-painter
+              painter1
+              (make-vect 0.0 0.0)
+              (make-vect 1.0 0.0)
+              split-point))
+            (paint-down
+             (transform-painter
+              painter2
+              split-point
+              (make-vect 1.0 0.5)
+              (make-vect 0.0 1.0))))
+        (lambda (frame)
+          (paint-up frame)
+          (paint-down frame)))))
+#+end_src
+
+below with rotate
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (below painter1 painter2)
+    (let ((paiter1-left-90 (rotate270 painter1)) (painter2-left-90 (rotate270 painter2)))
+      (rotate90 (beside painter1-left-90 painter2-left-90))))
+#+end_src
+
+** Exercise 2.52
+b
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+(define (corner-split painter n)
+  (if (= n 0)
+      painter
+      (let ((up (up-split painter (- n 1)))
+            (right (right-split painter (- n 1))))
+        (let ((top-left (beside up up))
+              (bottom-right (below right right))
+              (corner (corner-split painter (- n 1))))
+          (beside (below painter up)
+                  (below right corner))))))
+#+end_src
+
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (square-limitt painter n)
+    (let ((tr (lambda (p) (rotate180 (corner-split (rotate180 p) n)))))
+      ((square-of-four (lambda (p) (flip-horiz (tr p))) tr (lambda (p) (rotate180 (tr p)))  (lambda (p) (flip-vert (tr p)))) painter)))
+#+end_src
+
+** Exercise snippet
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+#+end_src
+

@@ -1,0 +1,546 @@
+#+TITLE: Assignment and Local State
+* Pre
+** square
+#+name:square
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (square x) (* x x))
+#+end_src
+
+** Filter
+#+name:filter
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (filter predicate sequence)
+    (cond ((null? sequence) nil)
+          ((predicate (car sequence)) (cons (car sequence) (filter predicate (cdr sequence))))
+          (else (filter predicate (cdr sequence)))))
+#+end_src
+
+#+RESULTS:
+: (1 3 5)
+
+** Accumulate
+#+name:accumulate
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (accumulate op initial seq)
+    (if (null? seq) initial (op (car seq) (accumulate op initial (cdr seq)))) )
+#+end_src
+
+** Enumerate
+#+name:enumerate-interval
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (enumerate-interval low high)
+    (if (> low high) nil (cons low (enumerate-interval (inc low) high))))
+#+end_src
+
+#+name:enumerate-tree
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (enumerate-tree tree)
+    (cond ((null? tree) nil)
+          ((not (pair? tree)) (list tree))
+          (else (append (enumerate-tree (car tree)) (enumerate-tree (cdr tree))))
+          ))
+#+end_src
+
+** pre-requistes
+#+NAME:prime
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (square x) (* x x))
+  (define (smallest-divisor n) (find-divisor n 2))
+  (define (find-divisor n test-divisor)
+    (cond ((> (square test-divisor) n) n)
+          ((divides? test-divisor n) test-divisor)
+          (else (find-divisor n (+ test-divisor 1 )))))
+  (define (divides? a b) (= (remainder b a) 0))
+
+  (define (prime? n)
+    (and (not (= n 1)) (= n (smallest-divisor n))))
+#+end_src
+
+#+NAME:fib
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (fib n)
+    (cond ((= n 0) 0)
+          ((= n 1) 1)
+          (else (+
+                 (fib (- n 1))
+                 (fib (- n 2))))))
+#+end_src
+
+#+NAME:square
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (square x) (* x x))
+#+end_src
+
+#+NAME:gcd
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (gcd a b)
+    (if (= b 0)
+        a
+        (gcd b (remainder a b))))
+#+end_src
+
+#+NAME:average
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (average a b) (/ (+ a b) 2))
+#+end_src
+
+#+NAME:pow
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (pow x n)
+    (if (= n 1)
+        x
+        (* x (pow x (dec n)))))
+#+end_src
+** Test 
+#+begin_src racket :lang sicp :results output
+#+end_src
+
+#+RESULTS:
+: #f
+
+
+* 3.1.1
+** withdraw
+#+begin_src racket :lang sicp :results output
+  (define balance 100)
+
+  (define (withdraw amount balance)
+    (if (>= balance amount)
+        (begin
+          (set! balance (- balance amount))
+          balance)
+        "Not enough money"))
+
+  (withdraw 25 balance)
+  (withdraw 25 balance)
+  (withdraw 25 balance)
+  (withdraw 25 balance)
+#+end_src
+
+#+RESULTS:
+: 75
+: 75
+: 75
+: 75
+
+** withdraw-let 
+#+begin_src racket :lang sicp :results output
+  (define new-withdraw
+    (let ((balance 100))
+      (lambda (amount)
+        (if (>= balance amount)
+            (begin (set! balance (- balance amount))
+                   balance)
+            "Insufficient funds"))))
+
+#+end_src
+
+#+begin_src racket :lang sicp :results output
+  (define (new-withdraw amount)
+    (define balance 100)
+    (if (>= balance amount)
+        (begin (set! balance (- balance amount))
+               balance)
+        "Insufficient funds"))
+
+  (new-withdraw 40)
+  (new-withdraw 40)
+#+end_src
+
+** withdraw-formal-arg 
+#+begin_src racket :lang sicp :results output
+  (define (make-withdraw balance)
+    (lambda (amount)
+      (if (>= balance amount)
+          (begin (set! balance (- balance amount))
+                       balance)
+                 "Insufficient funds")))
+
+  (define W1 (make-withdraw 100))
+  (W1 10)
+  (W1 10)
+  (W1 10)
+#+end_src
+
+#+RESULTS:
+: 90
+: 80
+: 70
+
+** withdraw-dispatch 
+#+begin_src racket :lang sicp :results output
+  (define (make-account balance)
+    (define (withdraw amount)
+      (if (>= balance amount)
+          (begin (set! balance (- balance amount))
+                 balance)
+          "Insufficient funds"))
+    (define (deposit amount)
+      (set! balance (+ balance amount))
+      balance)
+    (define (dispatch m)
+      (cond ((eq? m 'withdraw) withdraw)
+            ((eq? m 'deposit) deposit)
+            (else (error "Unknown request: MAKE-ACCOUNT" m))))
+    dispatch)
+
+  (define ac (make-account 100))
+  ((ac 'withdraw) 70)
+  ((ac 'withdraw) 10)
+  ((ac 'deposit) 10)
+#+end_src
+
+#+RESULTS:
+: 30
+: 20
+: 30
+
+** Exercise 3.1 
+#+begin_src racket :lang sicp :results output
+  (define (make-accumulator num)
+    (lambda (amount) (set! num (+ num amount)) num))
+
+  (define A (make-accumulator 5))
+
+  (A 10)
+  (A 10)
+#+end_src
+
+#+RESULTS:
+: 15
+: 25
+
+** Exercise 3.2 
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (make-monitored func)
+    (let ((count 0))
+      (lambda (arg)
+        (cond ((eq? arg 'reset-count) (set! count 0))
+              ((eq? arg 'how-many-calls?) count)
+              (else (begin (set! count (inc count)) (func arg) ))))))
+
+  (define s (make-monitored sqrt))
+  (s 100)
+  (s 'how-many-calls?)
+  (s 'reset-count)
+  (s 100)
+  (s 100)
+  (s 'how-many-calls?)
+#+end_src
+
+#+RESULTS:
+: 10
+: 1
+: 10
+: 10
+: 2
+
+** Exercise 3.2(re) 
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (make-monitored func)
+    (define counter 0)
+    (define (mf message)
+      (cond ((eq? message 'reset-count) (set! counter 0))
+            ((eq? message 'how-many-calls?) counter)
+            (else (begin (set! counter (inc counter)) (func message)))))
+    mf)
+
+  (define s (make-monitored sqrt))
+  (s 100)
+  (s 'how-many-calls?)
+  (s 'reset-count)
+  (s 100)
+  (s 100)
+  (s 'how-many-calls?)
+  (s 100)
+  (s 'how-many-calls?)
+#+end_src
+
+#+RESULTS:
+: 10
+: 1
+: 10
+: 10
+: 2
+: 10
+: 3
+
+** Exercise 3.3 
+#+begin_src racket :lang sicp :results output
+  (define (make-account balance password)
+    (define (withdraw amount)
+      (if (>= balance amount)
+          (begin (set! balance (- balance amount))
+                 balance)
+          "Insufficient funds"))
+    (define (deposit amount)
+      (set! balance (+ balance amount))
+      balance)
+    (define (dispatch entered-pswd m)
+      (cond ((not (eq? entered-pswd password)) (lambda (x) "Incorrect Password"))
+            (else (cond ((eq? m 'withdraw) withdraw)
+                        ((eq? m 'deposit) deposit)
+                        (else (error "Unknown request: MAKE-ACCOUNT" m))))))
+    dispatch)
+
+  (define acc (make-account 100 'syha))
+  ((acc 'syha 'withdraw) 70)
+  ((acc 'faks 'withdraw) 10)
+  ((acc 'syha 'deposit) 10)
+#+end_src
+
+#+RESULTS:
+: 30
+: "Incorrect Password"
+: 40
+
+** Exercise 3.4 
+#+begin_src racket :lang sicp :results output
+  (define (make-account balance password)
+    (define accessed-count 0)
+    (define (withdraw amount)
+      (if (>= balance amount)
+          (begin (set! balance (- balance amount))
+                 balance)
+          "Insufficient funds"))
+    (define (deposit amount)
+      (set! balance (+ balance amount))
+      balance)
+    (define (dispatch entered-pswd m)
+      (cond ((and (not (eq? entered-pswd password)) (> accessed-count 5)) (lambda (x) "Cop called"))
+            ((not (eq? entered-pswd password)) (lambda (x) (set! accessed-count (inc accessed-count)) "Incorrect Password"))
+            (else (cond ((eq? m 'withdraw) (set! accessed-count 0) withdraw)
+                        ((eq? m 'deposit) (set! accessed-count 0) deposit)
+                        (else (error "Unknown request: MAKE-ACCOUNT" m))))))
+    dispatch)
+
+  (define acc (make-account 100 'syha))
+  ((acc 'syha 'withdraw) 70)
+  ((acc 'faks 'withdraw) 10)
+  ((acc 'faks 'withdraw) 10)
+  ((acc 'faks 'withdraw) 10)
+  ((acc 'faks 'withdraw) 10)
+  ((acc 'faks 'withdraw) 10)
+  ((acc 'faks 'withdraw) 10)
+  ((acc 'syha 'withdraw) 5)
+  ((acc 'faks 'withdraw) 10)
+  ((acc 'faks 'withdraw) 10)
+  ((acc 'faks 'withdraw) 10)
+  ((acc 'faks 'withdraw) 10)
+  ((acc 'faks 'withdraw) 10)
+  ((acc 'faks 'withdraw) 10)
+  ((acc 'faks 'withdraw) 10)
+#+end_src
+
+#+RESULTS:
+#+begin_example
+30
+"Incorrect Password"
+"Incorrect Password"
+"Incorrect Password"
+"Incorrect Password"
+"Incorrect Password"
+"Incorrect Password"
+25
+"Incorrect Password"
+"Incorrect Password"
+"Incorrect Password"
+"Incorrect Password"
+"Incorrect Password"
+"Incorrect Password"
+"Cop called"
+#+end_example
+
+** Exercise 3.5 
+*** prepare
+#+name:point
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (point x y) (cons x y))
+  (define (x point) (car point))
+  (define (y point) (cdr point))
+#+end_src
+
+#+name:rectangle
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (rectangle lower-left upper-right)
+    (define points (list lower-left ;; lower-left
+          (point (x lower-left) (y upper-right)) ;; upper-left
+          upper-right ;; upper-right
+          (point (x upper-right) (y lower-left)))) ;; lower-right
+    (define left-x (x lower-left))
+    (define right-x (x upper-right))
+    (define lower-y (y lower-left))
+    (define upper-y (y upper-right))
+    (define width (- (x upper-right) (x lower-left)))
+    (define height (- (y upper-right) (y lower-left)))
+    (define (dispatch message)
+      (cond ((eq? message 'points) points)
+            ((eq? message 'left-x) left-x)
+            ((eq? message 'right-x) right-x)
+            ((eq? message 'lower-y) lower-y)
+            ((eq? message 'upper-y) upper-y)
+            ((eq? message 'area) (* width height))
+            (else (error "not supported message :" message)))) dispatch)
+
+  (define (in-rectangle? point rectangle)
+    (let ((x (x point)) (y (y point)))
+      (and (and (> x (rectangle 'left-x)) ;; ask x
+                (< x (rectangle 'right-x))) 
+           (and (> y (rectangle 'lower-y)) ;; ask y
+                (< y (rectangle 'upper-y))))))
+
+  (define (rand-point-rectangle rectangle)
+    (lambda () (point (+ (rectangle 'left-x) (random (- (rectangle 'right-x) (rectangle 'left-x))))
+                 (+ (rectangle 'lower-y) (random (- (rectangle 'upper-y) (rectangle 'lower-y)))))))
+#+end_src
+
+#+RESULTS: rectangle
+: /var/folders/_3/nwly65x92d13qp765t5gqbl40000gn/T/babel-qJ5Cax/org-babel-HyRZ47.rkt:6:9: point: unbound identifier
+:   in: point
+:   location...:
+:    /var/folders/_3/nwly65x92d13qp765t5gqbl40000gn/T/babel-qJ5Cax/org-babel-HyRZ47.rkt:6:9
+
+#+name:monte-carlo
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (monte-carlo trial experiment)
+    (define (iter passed remaining)
+      (cond ((= remaining 0) (/ passed trial))
+            ((experiment) (iter (inc passed) (dec remaining)))
+            (else (iter passed (dec remaining)))))
+      (iter 0.0 trial))
+#+end_src
+
+#+name:circle
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<square>>
+
+  (define (circle center radius) (cons center radius))
+
+  (define (center-circle circle) (car circle))
+  (define (radius-circle circle) (cdr circle))
+
+  (define (in-circle? point circle)
+    (let ((center (center-circle circle))
+          (radius (radius-circle circle)))
+      (<= (+ (square (- (x point) (x center)))
+             (square (- (y point) (y center))))
+          (square radius))))
+#+end_src
+
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<point>>
+  <<rectangle>>
+  <<circle>>
+#+end_src
+
+#+RESULTS:
+: #t
+
+*** problem
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<point>>
+  <<rectangle>>
+  <<monte-carlo>>
+  <<circle>>
+
+  (define (pred c) (lambda (rand-point) (in-circle? (rand-point) c)))
+
+  (define (estimate-integral p r trial)
+    (* (r 'area)
+       (monte-carlo trial (lambda () (p (rand-point-rectangle r))))))
+
+  (define rect (rectangle (point 2.0 4.0) (point 8 10)))
+  (define circ (circle (point 5 7) 3))
+
+  (estimate-integral (pred circ) rect 10000.0)
+  (/ (estimate-integral (pred circ) rect 100000.0) (square (radius-circle circ)))
+#+end_src
+
+#+RESULTS:
+: 28.429199999999998
+: 3.1354
+
+
+
+** Exercise 3.6 
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (ev)
+    (let ((x 3))
+      (define k 4) k))
+
+  ;; (define rand 
+  ;;   (let ((x random-init)) 
+  ;;     (define (dispatch message) 
+  ;;       (cond ((eq? message 'generate) 
+  ;;              (begin (set! x (rand-update x)) 
+  ;;                     x)) 
+  ;;             ((eq? message 'reset) 
+  ;;              (lambda (new-value) (set! x new-value))))) 
+  ;;     dispatch)) 
+#+end_src
+
+#+RESULTS:
+: 4
+
+
+** Exercise 3.7 
+#+begin_src racket :lang sicp :results output
+  (define (make-account balance password)
+    (define (withdraw amount)
+      (if (>= balance amount)
+          (begin (set! balance (- balance amount))
+                 balance)
+          "Insufficient funds"))
+    (define (deposit amount)
+      (set! balance (+ balance amount))
+      balance)
+    (define (dispatch entered-pswd m)
+      (cond ((not (eq? entered-pswd password)) (lambda _ "Incorrect Password"))
+            (else (cond ((eq? m 'withdraw) withdraw)
+                        ((eq? m 'deposit) deposit)
+                        ((eq? m 'joint) dispatch)
+                        (else (error "Unknown request: MAKE-ACCOUNT" m))))))
+    dispatch)
+
+  (define (make-joint account pwd new-pwd)
+    (lambda (input-pwd message)
+      (cond ((eq? new-pwd input-pwd) ((account pwd 'joint) pwd message))
+            (else (lambda _ "Incorrect Password")))))
+
+  (define peter-acc (make-account 100 'syha))
+  (define paul-acc (make-joint peter-acc 'syha 'qwer))
+  ((peter-acc 'syha 'withdraw) 30)
+  ((peter-acc 'syha 'deposit) 10)
+  ((paul-acc 'qwer 'deposit) 30)
+  ((peter-acc 'syha 'withdraw) 10)
+  ((paul-acc 'qwer 'deposit) 30)
+#+end_src
+
+#+RESULTS:
+: 70
+: 80
+: 110
+: 100
+: 130
+
+** Exercise 3.8 
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define f
+    (let ((open true))
+      (lambda (n) (if open (begin (set! open false) n) 0))))
+
+  (+ (f 0) (f 1))
+#+end_src
+
+#+RESULTS:
+: 0
+
+
+** Test 
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+
+#+end_src
+
+** Test 
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+#+end_src

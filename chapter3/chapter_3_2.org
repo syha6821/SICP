@@ -1,0 +1,110 @@
+#+TITLE: The Environment Model of Evaluation
+* Pre
+** square
+#+name:square
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (square x) (* x x))
+#+end_src
+
+** Filter
+#+name:filter
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (filter predicate sequence)
+    (cond ((null? sequence) nil)
+          ((predicate (car sequence)) (cons (car sequence) (filter predicate (cdr sequence))))
+          (else (filter predicate (cdr sequence)))))
+#+end_src
+
+#+RESULTS:
+: (1 3 5)
+
+** Accumulate
+#+name:accumulate
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (accumulate op initial seq)
+    (if (null? seq) initial (op (car seq) (accumulate op initial (cdr seq)))) )
+#+end_src
+
+** Enumerate
+#+name:enumerate-interval
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (enumerate-interval low high)
+    (if (> low high) nil (cons low (enumerate-interval (inc low) high))))
+#+end_src
+
+#+name:enumerate-tree
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (enumerate-tree tree)
+    (cond ((null? tree) nil)
+          ((not (pair? tree)) (list tree))
+          (else (append (enumerate-tree (car tree)) (enumerate-tree (cdr tree))))
+          ))
+#+end_src
+
+** pre-requistes
+#+NAME:prime
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (square x) (* x x))
+  (define (smallest-divisor n) (find-divisor n 2))
+  (define (find-divisor n test-divisor)
+    (cond ((> (square test-divisor) n) n)
+          ((divides? test-divisor n) test-divisor)
+          (else (find-divisor n (+ test-divisor 1 )))))
+  (define (divides? a b) (= (remainder b a) 0))
+
+  (define (prime? n)
+    (and (not (= n 1)) (= n (smallest-divisor n))))
+#+end_src
+
+#+NAME:fib
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (fib n)
+    (cond ((= n 0) 0)
+          ((= n 1) 1)
+          (else (+
+                 (fib (- n 1))
+                 (fib (- n 2))))))
+#+end_src
+
+#+NAME:square
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (square x) (* x x))
+#+end_src
+
+#+NAME:gcd
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (gcd a b)
+    (if (= b 0)
+        a
+        (gcd b (remainder a b))))
+#+end_src
+
+#+NAME:average
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (average a b) (/ (+ a b) 2))
+#+end_src
+
+#+NAME:pow
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (pow x n)
+    (if (= n 1)
+        x
+        (* x (pow x (dec n)))))
+#+end_src
+** Test 
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+#+end_src
+
+
+* 3.2.1 The Rules for Evaluation
+** Test 
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define-values a 9)
+#+end_src
+
+#+RESULTS:
+: /var/folders/_3/nwly65x92d13qp765t5gqbl40000gn/T/babel-KxtFOZ/org-babel-WS4Xwp.rkt:5:8: module: identifier already defined
+:   at: a
+:   in: (define-values (a) 8)
+:   location...:
+:    /var/folders/_3/nwly65x92d13qp765t5gqbl40000gn/T/babel-KxtFOZ/org-babel-WS4Xwp.rkt:5:8

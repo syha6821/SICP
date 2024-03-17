@@ -1,0 +1,1279 @@
+#+TITLE: Streams Are Delayed Lists
+* Pre
+** square
+#+name:square
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (square x) (* x x))
+#+end_src
+
+** Filter
+#+name:filter
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (filter predicate sequence)
+    (cond ((null? sequence) nil)
+          ((predicate (car sequence)) (cons (car sequence) (filter predicate (cdr sequence))))
+          (else (filter predicate (cdr sequence)))))
+#+end_src
+
+#+RESULTS:
+: (1 3 5)
+
+** Accumulate
+#+name:accumulate
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (accumulate op initial seq)
+    (if (null? seq) initial (op (car seq) (accumulate op initial (cdr seq)))) )
+#+end_src
+
+** Enumerate
+#+name:enumerate-interval
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (enumerate-interval low high)
+    (if (> low high) nil (cons low (enumerate-interval (inc low) high))))
+#+end_src
+
+#+name:enumerate-tree
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (enumerate-tree tree)
+    (cond ((null? tree) nil)
+          ((not (pair? tree)) (list tree))
+          (else (append (enumerate-tree (car tree)) (enumerate-tree (cdr tree))))
+          ))
+#+end_src
+
+** pre-requistes
+#+NAME:prime
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (square x) (* x x))
+  (define (smallest-divisor n) (find-divisor n 2))
+  (define (find-divisor n test-divisor)
+    (cond ((> (square test-divisor) n) n)
+          ((divides? test-divisor n) test-divisor)
+          (else (find-divisor n (+ test-divisor 1 )))))
+  (define (divides? a b) (= (remainder b a) 0))
+
+  (define (prime? n)
+    (and (not (= n 1)) (= n (smallest-divisor n))))
+#+end_src
+
+#+NAME:fib
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (fib n)
+    (cond ((= n 0) 0)
+          ((= n 1) 1)
+          (else (+
+                 (fib (- n 1))
+                 (fib (- n 2))))))
+#+end_src
+
+#+NAME:square
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (square x) (* x x))
+#+end_src
+
+#+NAME:gcd
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (gcd a b)
+    (if (= b 0)
+        a
+        (gcd b (remainder a b))))
+#+end_src
+
+#+NAME:average
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (average a b) (/ (+ a b) 2))
+#+end_src
+
+#+NAME:pow
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (pow x n)
+    (if (= n 1)
+        x
+        (* x (pow x (dec n)))))
+#+end_src
+
+** stream 
+*** stream
+#+name:stream
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<stream-interval>>
+  <<stream-filter>>
+  <<add-streams>>
+  <<mul-streams>>
+  <<scale-stream>>
+  <<partial-sums>>
+  (define (stream-car s) (car s))
+  (define (stream-cdr s) (force (cdr s)))
+
+  (define (stream-ref s n)
+    (if (= n 0)
+        (stream-car s)
+        (stream-ref (stream-cdr s) (- n 1))))
+
+  (define (stream-map proc . argstreams)
+    (if (stream-null? (car argstreams))
+        the-empty-stream
+        (cons-stream
+         (apply proc (map stream-car argstreams))
+         (apply stream-map
+                (cons proc (map stream-cdr argstreams))))))
+
+  (define (stream-for-each proc s)
+    (if (stream-null? s)
+        'done
+        (begin (proc (stream-car s))
+               (stream-for-each proc (stream-cdr s)))))
+
+  (define (neg-stream stream) (stream-map (lambda (x) (- x)) stream))
+
+
+  (define (display-stream s)
+    (stream-for-each display-line s))
+
+  (define (display-line x) (newline) (display x))
+
+  (define (length-stream s)
+    (if (stream-null? s)
+        0
+        (+ 1 (length-stream (stream-cdr s)))))
+#+end_src
+*** stream interval
+#+name:stream-interval
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (stream-enumerate-interval low high)
+    (if (> low high)
+        the-empty-stream
+        (cons-stream
+         low
+         (stream-enumerate-interval (+ low 1) high))))
+#+end_src
+
+*** stream filter
+#+name:stream-filter
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (stream-filter pred stream)
+    (cond ((stream-null? stream) the-empty-stream)
+          ((pred (stream-car stream))
+           (cons-stream (stream-car stream)
+                        (stream-filter
+                         pred
+                         (stream-cdr stream))))
+          (else (stream-filter pred (stream-cdr stream)))))
+#+end_src
+
+*** add streams
+#+name:add-streams
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (add-streams s1 s2) (stream-map + s1 s2))
+#+end_src
+
+*** mul streams
+#+name:mul-streams
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (mul-streams s1 s2) (stream-map * s1 s2))
+#+end_src
+
+*** scale stream
+#+name:scale-stream
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (scale-stream s n)
+    (stream-map (lambda (e) (* n e)) s))
+#+end_src
+*** partial sums
+#+name:partial-sums
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (partial-sums s)
+    (cons-stream (stream-car s) (add-streams (stream-cdr s) (partial-sums s))))
+#+end_src
+
+** merge 
+#+name:merge
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (merge s1 s2)
+    (cond ((stream-null? s1) s2)
+          ((stream-null? s2) s1)
+          (else
+           (let ((s1car (stream-car s1))
+                 (s2car (stream-car s2)))
+             (cond ((< s1car s2car)
+                    (cons-stream
+                     s1car
+                     (merge (stream-cdr s1) s2)))
+                   ((> s1car s2car)
+                    (cons-stream
+                     s2car
+                     (merge s1 (stream-cdr s2))))
+                   (else
+                    (cons-stream
+                     s1car
+                     (merge (stream-cdr s1)
+                            (stream-cdr s2)))))))))
+#+end_src
+
+** Integer 
+#+name:integers
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define ones (cons-stream 1 ones))
+  (define (integers>= n) (cons-stream n (integers>= (+ n 1))))
+  (define integers (integers>= 1))
+  (define (integers<= n) (stream-enumerate-interval 1 n))
+#+end_src
+
+** Test 
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+#+end_src
+
+
+* 1. Streams Are Delayed Lists
+** Exercise 3.52 
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<stream>>
+  (define sum 0)
+  (define (accum x) (set! sum (+ x sum)) sum)
+  (define seq
+    (stream-map accum
+                (stream-enumerate-interval 1 20)))
+  (define y (stream-filter even? seq))
+  (define z
+    (stream-filter (lambda (x) (= (remainder x 5) 0))
+                   seq))
+  (stream-ref y 7)
+  (display-stream z)
+#+end_src
+
+#+RESULTS:
+#+begin_example
+136
+
+10
+15
+45
+55
+105
+120
+190
+210done
+#+end_example
+
+** seive
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<stream>>
+  (define (divisible? x y) (= (remainder x y) 0))
+  (define (integers-starting-from n)
+    (cons-stream n (integers-starting-from (+ n 1))))
+  (define integers (integers-starting-from 1))
+
+  (define (sieve stream)
+    (cons-stream
+     (stream-car stream)
+     (sieve (stream-filter
+             (lambda (x)
+               (not (divisible? x (stream-car stream))))
+             (stream-cdr stream)))))
+  (define primes (sieve (integers-starting-from 2)))
+  (stream-ref primes 50)
+#+end_src
+
+#+RESULTS:
+: 233
+
+** Test 
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+#+end_src
+
+
+** Test 
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+#+end_src
+
+** Test 
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+
+#+end_src
+
+#+RESULTS:
+: /var/folders/_3/nwly65x92d13qp765t5gqbl40000gn/T/babel-4dsOjQ/org-babel-EQUgtP.rkt:4:0: collect: unbound identifier
+:   in: collect
+:   location...:
+:    /var/folders/_3/nwly65x92d13qp765t5gqbl40000gn/T/babel-4dsOjQ/org-babel-EQUgtP.rkt:4:0
+
+
+* 2. Infinite Streams
+** Exercise 3.54
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<stream>>
+  (define ones (cons-stream 1 ones))
+  (define integers (cons-stream 1 (add-streams ones integers)))
+  (define factorials
+    (cons-stream 1 (mul-streams factorials integers)))
+
+  (stream-ref factorials 2)
+#+end_src
+
+#+RESULTS:
+: 2
+
+** Exercise 3.55 
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<stream>>
+  (define ones (cons-stream 1 ones))
+  (define integers (cons-stream 1 (add-streams ones integers)))
+  (define (partial-sums s)
+    (cons-stream (stream-car s) (add-streams (stream-cdr s) (partial-sums s))))
+
+  (stream-ref (partial-sums integers) 4)
+#+end_src
+
+#+RESULTS:
+: 15
+
+** Exercise 3.56 
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<stream>>
+  <<merge>>
+  (define ones (cons-stream 1 ones))
+  (define integers (cons-stream 1 (add-streams ones integers)))
+  (define S (cons-stream 1 (merge (scale-stream S 2) (merge (scale-stream S 3) (scale-stream S 5)))))
+#+end_src
+
+#+RESULTS:
+: 8
+** Exercise 3.56 
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<stream>>
+  (define (expand num den radix)
+    (cons-stream
+     (quotient (* num radix) den)
+     (expand (remainder (* num radix) den) den radix)))
+
+  (define e1 (expand 1 7 10))
+  (define e2 (expand 3 8 10))
+  (stream-ref e1 6)
+  (stream-ref e2 10)
+  (/ 1.0 7)
+  (/ 3.0 8 10)
+#+end_src
+
+#+RESULTS:
+: 1
+: 0
+: 0.14285714285714285
+: 0.0375
+
+** Exercise 3.59 (a)
+#+name:integrate-series
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<integers>>
+  (define (integrate-series stream)
+    (cons-stream (stream-car stream)
+                 (mul-streams (stream-map (lambda (i) (/ 1 i)) (stream-cdr integers))
+                              (stream-cdr stream))))
+#+end_src
+
+#+RESULTS: integrate-series
+: 1
+: 1
+
+** Exercise 3.59 (b)
+#+name:trigonometry-series
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<integrate-series>>
+  (define exp-series
+    (cons-stream 1 (integrate-series exp-series)))
+
+  (define cosine-series
+    (cons-stream 1 (integrate-series (neg-stream sine-series))))
+
+  (define sine-series
+    (cons-stream 0 (integrate-series cosine-series)))
+#+end_src
+
+** Exercise 3.60 
+#+name:mul-series
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (mul-series s1 s2)
+    (cons-stream (* (stream-car s1) (stream-car s2))
+                 (add-streams (scale-stream (stream-cdr s2) (stream-car s1))
+                              (mul-series (stream-cdr s1) s2))))
+#+end_src
+
+#+RESULTS:
+: 1.0
+** Exercise 3.61 
+#+name:invert-unit-series
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (invert-unit-series S)
+    (cons-stream 1 (neg-stream (mul-series (stream-cdr S) (invert-unit-series S)))))
+#+end_src
+
+** Exercise 3.62
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<stream>>
+  <<mul-series>>
+  <<invert-unit-series>>
+  <<trigonometry-series>>
+  (define (div-series s1 s2)
+    (if (zero? (stream-car s2))
+               (error "Zero Devide : Constant term of denominator")
+               (mul-series s1 (invert-unit-series s2))))
+
+  (define tangent-series (div-series sine-series cosine-series))
+  (stream-ref tangent-series 3)
+#+end_src
+
+#+RESULTS:
+: 1/3
+
+
+* 3. Exploiting the Stream Paradigm
+** Exercise 3.64
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<stream>>
+  (define (sqrt-stream x)
+    (define guesses
+      (cons-stream
+       1.0
+       (stream-map (lambda (guess) (sqrt-improve guess x))
+                   guesses)))
+    guesses)
+
+  (define (average a b) (/ (+ a b) 2))
+
+  (define (sqrt-improve guess x)
+    (average guess (/ x guess)))
+
+  (define (stream-limit stream tolerance)
+    (let ((e1 (stream-car stream))
+          (e2 (stream-car (stream-cdr stream))))
+      (if (> tolerance (abs (- e1 e2)))
+          e2
+          (stream-limit (stream-cdr stream) tolerance))))
+
+  (define (sqrt x tolerance)
+    (stream-limit (sqrt-stream x) tolerance))
+
+  (sqrt 2 0.000001)
+#+end_src
+
+#+RESULTS:
+: 1.414213562373095
+
+** Exercise 3.65 
+#+name:accelation
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<square>>
+  (define (euler-transform s)
+    (let ((s0 (stream-ref s 0))
+          (s1 (stream-ref s 1))
+          (s2 (stream-ref s 2)))
+      (cons-stream (- s2 (/ (square (- s2 s1))
+                            (+ s0 (* -2 s1) s2)))
+                   (euler-transform (stream-cdr s)))))
+
+  (define (make-tableau transform s)
+    (cons-stream s (make-tableau transform (transform s))))
+
+  (define (accelerated-sequence transform s)
+    (stream-map stream-car (make-tableau transform s)))
+#+end_src
+
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<stream>>
+  <<integers>>
+  <<accelation>>
+
+  (define (inverse x) (/ 1 x))
+  (define ln2-series
+    (cons-stream 1
+                 (stream-map (lambda (i) (* i (- (/ (abs (inverse i)) (inc (abs (inverse i))))))) ln2-series)))
+
+  (define ln2-stream
+    (partial-sums ln2-series))
+
+  ;; (stream-ref ln2-series 3)
+  ;; (* (stream-ref ln2-stream 3000) 1.0)
+
+  (define fast-ln2
+    (accelerated-sequence euler-transform ln2-stream))
+
+  (* (stream-ref fast-ln2 4) 1.0)
+#+end_src
+
+#+RESULTS:
+: 0.6931471960735491
+
+
+** Infinite pairs 
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<stream>>
+  <<integers>>
+  <<enumerate-interval>>
+
+  (define (pairs s t)
+    (cons-stream
+     (list (stream-car s) (stream-car t))
+     (interleave
+      (stream-map (lambda (x) (list (stream-car s) x))
+                  (stream-cdr t))
+      (pairs (stream-cdr s) (stream-cdr t)))))
+
+  (define (stream-append s1 s2)
+    (if (stream-null? s1)
+        s2
+        (cons-stream (stream-car s1)
+                     (stream-append (stream-cdr s1) s2))))
+
+  (define (interleave s1 s2)
+    (if (stream-null? s1)
+        s2
+        (cons-stream (stream-car s1)
+                     (interleave s2 (stream-cdr s1)))))
+
+  (define p (pairs integers integers))
+  (define (display-pair num p)
+    (display num)
+    (display " ")
+    (display (stream-ref p num))
+    (newline))
+
+  (for-each (lambda (num) (display-pair num p)) (enumerate-interval 0 30))
+
+  (define 2-powers
+    (cons-stream 2 (stream-map (lambda (x) (* x 2)) 2-powers)))
+
+  (stream-ref (partial-sums (cons-stream 0 2-powers)) 99)
+#+end_src
+
+#+RESULTS:
+#+begin_example
+0 (1 1)
+1 (1 2)
+2 (2 2)
+3 (1 3)
+4 (2 3)
+5 (1 4)
+6 (3 3)
+7 (1 5)
+8 (2 4)
+9 (1 6)
+10 (3 4)
+11 (1 7)
+12 (2 5)
+13 (1 8)
+14 (4 4)
+15 (1 9)
+16 (2 6)
+17 (1 10)
+18 (3 5)
+19 (1 11)
+20 (2 7)
+21 (1 12)
+22 (4 5)
+23 (1 13)
+24 (2 8)
+25 (1 14)
+26 (3 6)
+27 (1 15)
+28 (2 9)
+29 (1 16)
+30 (5 5)
+1267650600228229401496703205374
+#+end_example
+
+
+** Exercise 3.67
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<stream>>
+  <<integers>>
+  <<enumerate-interval>>
+
+  (define (pairs s t)
+    (cons-stream
+     (list (stream-car s) (stream-car t))
+     (interleave
+      (stream-map (lambda (x) (list (stream-car s) x))
+                  (stream-cdr t))
+      (pairs (stream-cdr s) t))))
+
+  (define (interleave s1 s2)
+    (if (stream-null? s1)
+        s2
+        (cons-stream (stream-car s1)
+                     (interleave s2 (stream-cdr s1)))))
+
+  (define p (pairs integers integers))
+  (define (display-pair num p)
+    (display num)
+    (display " ")
+    (display (stream-ref p num))
+    (newline))
+
+  (for-each (lambda (num) (display-pair num p)) (enumerate-interval 0 30))
+#+end_src
+
+#+RESULTS:
+#+begin_example
+0 (1 1)
+1 (1 2)
+2 (2 1)
+3 (1 3)
+4 (2 2)
+5 (1 4)
+6 (3 1)
+7 (1 5)
+8 (2 3)
+9 (1 6)
+10 (3 2)
+11 (1 7)
+12 (2 4)
+13 (1 8)
+14 (4 1)
+15 (1 9)
+16 (2 5)
+17 (1 10)
+18 (3 3)
+19 (1 11)
+20 (2 6)
+21 (1 12)
+22 (4 2)
+23 (1 13)
+24 (2 7)
+25 (1 14)
+26 (3 4)
+27 (1 15)
+28 (2 8)
+29 (1 16)
+30 (5 1)
+#+end_example
+
+** Exercise 3.68
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<stream>>
+  (define (interleave s1 s2)
+    (if (stream-null? s1)
+        s2
+        (cons-stream (stream-car s1)
+                     (interleave s2 (stream-cdr s1)))))
+
+  (define nums (cons-stream 1 (cons-stream 2 (cons-stream 3 nil))))
+  (define alphas (cons-stream 'a (cons-stream 'b (cons-stream 'c nil))))
+
+  (display-stream (interleave nums alphas))
+#+end_src
+
+#+RESULTS:
+: 
+: 1
+: a
+: 2
+: b
+: 3
+: cdone
+
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<stream>>
+  <<integers>>
+  <<enumerate-interval>>
+  (define (interleave s1 s2)
+    (if (stream-null? s1)
+        s2
+        (cons-stream (stream-car s1)
+                     (interleave s2 (stream-cdr s1)))))
+
+  (define (pairs s t)
+     (interleave
+      (stream-map (lambda (x) (list (stream-car s) x))
+                  t)
+      (pairs (stream-cdr s) (stream-cdr t))))
+
+  (define p (pairs integers integers))
+  (define (display-pair num p)
+    (display num)
+    (display " ")
+    (display (stream-ref p num))
+    (newline))
+
+  ;; (for-each (lambda (num) (display-pair num p)) (enumerate-interval 0 0))
+  (stream-ref p 0)
+#+end_src
+
+** Exercise 3.69 
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<stream>>
+  <<integers>>
+  <<enumerate-interval>>
+  <<square>>
+
+  (define (interleave s1 s2)
+    (if (stream-null? s1)
+        s2
+        (cons-stream (stream-car s1)
+                     (interleave s2 (stream-cdr s1)))))
+
+  (define (pairs s t)
+    (cons-stream
+     (list (stream-car s) (stream-car t))
+     (interleave
+      (stream-map (lambda (x) (list (stream-car s) x))
+                  (stream-cdr t))
+      (pairs (stream-cdr s) (stream-cdr t)))))
+
+  (define (triples s t u)
+    (cons-stream
+     (list (stream-car s) (stream-car t) (stream-car u))
+     (interleave
+      (stream-map (lambda (x) (append (list (stream-car s)) x)) (stream-cdr (pairs t u)))
+      (triples (stream-cdr s) t u))))
+
+  ;; (define (triples s t u)
+  ;;   (cons-stream
+  ;;    (list (stream-car s) (stream-car t) (stream-car u))
+  ;;    (interleave
+  ;;     (stream-map (lambda (x) (append (list (stream-car s)) x)) (stream-cdr (pairs t u)))
+  ;;     (triples (stream-cdr s) (stream-cdr t) (stream-cdr u)))))
+
+  (define t (triples integers integers integers))
+
+  (define (display-pair num p)
+    (display num)
+    (display " ")
+    (display (stream-ref p num))
+    (newline))
+
+  (define pythagorean (stream-filter (lambda (x) (= (square (caddr x)) (+ (square (car x)) (square (cadr x))))) (triples integers integers integers)))
+
+  ;; (for-each (lambda (num) (display-pair num t)) (enumerate-interval 0 100))
+  (for-each (lambda (num) (display-pair num pythagorean)) (enumerate-interval 0 4))
+#+end_src
+
+#+RESULTS:
+: 0 (3 4 5)
+: 1 (4 3 5)
+: 2 (6 8 10)
+: 3 (8 6 10)
+: 4 (5 12 13)
+
+#+RESULTS:
+: 0 (3 4 5)
+: 1 (6 8 10)
+: 2 (5 12 13)
+: 3 (9 12 15)
+: 4 (8 15 17)
+
+** Exercise 3.70
+*** merge weight
+#+name:merge-weighted
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (merge-weighted s1 s2 weight)
+    (cond ((stream-null? s1) s2)
+          ((stream-null? s2) s1)
+          (else
+           (let ((s1car (stream-car s1))
+                 (s2car (stream-car s2)))
+             (let ((s1weight (weight s1car))
+                   (s2weight (weight s2car)))
+               (cond ((< s1weight s2weight)
+                      (cons-stream
+                       s1car
+                       (merge-weighted (stream-cdr s1) s2 weight)))
+                     ((> s1weight s2weight)
+                      (cons-stream
+                       s2car
+                       (merge-weighted s1 (stream-cdr s2) weight)))
+                     (else
+                      (cons-stream
+                       s1car
+                       (cons-stream
+                        s2car
+                        (merge-weighted (stream-cdr s1)
+                                        (stream-cdr s2)
+                                        weight))))))))))
+#+end_src
+
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<stream>>
+  <<integers>>
+  <<enumerate-interval>>
+  <<merge-weighted>>
+  (define (pairs s t)
+    (cons-stream
+     (list (stream-car s) (stream-car t))
+     (interleave
+      (stream-map (lambda (x) (list (stream-car s) x))
+                  (stream-cdr t))
+      (pairs (stream-cdr s) (stream-cdr t)))))
+
+  (define (divisible? x y) (= (remainder x y) 0))
+
+  (define (weighted-pairs s t weight)
+    (cons-stream (list (stream-car s) (stream-car t))
+                 (merge-weighted
+                  (stream-map (lambda (x) (list (stream-car s) x)) (stream-cdr t))
+                  (weighted-pairs (stream-cdr s) (stream-cdr t) weight)
+                  weight)))
+
+  (define (interleave s1 s2)
+    (if (stream-null? s1)
+        s2
+        (cons-stream (stream-car s1)
+                     (interleave s2 (stream-cdr s1)))))
+
+  (define p (weighted-pairs integers integers (lambda (pair) (+ (car pair) (cadr pair)))))
+  (define (pair-filter pair)
+    (let ((i (car pair))
+          (j (cadr pair))
+          (divisible235? (lambda (num) (or (divisible? num 2)
+                                      (divisible? num 3)
+                                      (divisible? num 5)))))
+      (not (or (divisible235? i) (divisible235? j)))))
+
+  (define b (stream-filter pair-filter (weighted-pairs integers integers (lambda (pair) (+ (* 2 (car pair)) (* 3 (cadr pair)) (* 5 (car pair) (cadr pair)))))))
+
+  (define (display-pair num p)
+    (display num)
+    (display " ")
+    (display (stream-ref p num))
+    (newline))
+
+  (for-each (lambda (num) (display-pair num p)) (enumerate-interval 0 5))
+  ;; (for-each (lambda (num) (display-pair num b)) (enumerate-interval 0 30))
+#+end_src
+
+#+RESULTS:
+: 0 (1 1)
+: 1 (1 2)
+: 2 (1 3)
+: 3 (2 2)
+: 4 (1 4)
+: 5 (2 3)
+
+#+begin_example
+0 (1 1)
+1 (1 2)
+2 (2 1)
+3 (1 3)
+4 (2 2)
+5 (1 4)
+6 (3 1)
+7 (1 5)
+8 (2 3)
+9 (1 6)
+10 (3 2)
+11 (1 7)
+12 (2 4)
+13 (1 8)
+14 (4 1)
+15 (1 9)
+16 (2 5)
+17 (1 10)
+18 (3 3)
+19 (1 11)
+20 (2 6)
+21 (1 12)
+22 (4 2)
+23 (1 13)
+24 (2 7)
+25 (1 14)
+26 (3 4)
+27 (1 15)
+28 (2 8)
+29 (1 16)
+30 (5 1)
+#+end_example
+
+** Exercise 3.71
+#+name:ex3.71
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<stream>>
+  <<integers>>
+  <<enumerate-interval>>
+  <<merge-weighted>>
+
+  (define (weighted-pairs s t weight)
+    (cons-stream (list (stream-car s) (stream-car t))
+                 (merge-weighted
+                  (stream-map (lambda (x) (list (stream-car s) x)) (stream-cdr t))
+                  (weighted-pairs (stream-cdr s) (stream-cdr t) weight)
+                  weight)))
+
+  (define (display-pair num p)
+    (display num)
+    (display " ")
+    (display (stream-ref p num))
+    (newline))
+#+end_src
+
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<ex3.71>>
+
+  (define (cube x) (* x x x))
+  (define (cube-sum pair) (+ (cube (car pair)) (cube (cadr pair))))
+
+  ;; (define ramanujan
+  ;;   (let ((cube-sums (stream-map cube-sum (weighted-pairs integers integers cube-sum))))
+  ;;     (let ((changes (stream-map (lambda (x y) (cons x (- x y))) cube-sums (stream-cdr cube-sums))))
+  ;;       (stream-map stream-car (stream-filter (lambda (change) (zero? (cdr change))) changes)))))
+
+  (define ramanujan
+    (let ((cube-sums (stream-map cube-sum (weighted-pairs integers integers cube-sum))))
+      (let ((nums (stream-map cons cube-sums (stream-cdr cube-sums))))
+        (stream-map stream-car (stream-filter (lambda (num) (= (car num) (cdr num))) nums)))))
+
+  (for-each (lambda (num) (display-pair num ramanujan)) (enumerate-interval 0 10))
+#+end_src
+
+#+RESULTS:
+#+begin_example
+0 1729
+1 4104
+2 13832
+3 20683
+4 32832
+5 39312
+6 40033
+7 46683
+8 64232
+9 65728
+10 110656
+#+end_example
+
+
+** Streams as Signals
+#+name:integral
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (integral integrand initial-value dt)
+    (define int
+      (cons-stream initial-value
+                   (add-streams (scale-stream integrand dt)
+                                int)))
+    int)
+#+end_src
+
+** Exercise 3.73
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<stream>>
+  <<integral>>
+
+  (define (RC R C dt)
+    (define (rc-stream i v0)
+      (add-streams (scale-stream i R)
+                   (integral (scale-stream i (/ 1 C)) v0 dt)))
+    rc-stream)
+#+end_src
+
+#+RESULTS:
+
+** Exercise 3.74
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define zero-crossings
+    (stream-map sign-change-detector
+                sense-data
+                (cons-stream (car sense-data) sense-data)))
+#+end_src
+
+** Exercise 3.75
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (make-zero-crossings input-stream last-value averaged)
+    (let ((avpt (/ (+ (stream-car input-stream)
+                      last-value)
+                   2)))
+      (cons-stream
+       (sign-change-detector avpt last-value)
+       (make-zero-crossings
+        (stream-cdr input-stream) (stream-car input-stream) avpt))))
+#+end_src
+
+** Exercise 3.76
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (average a b) (/ (+ a b) 2))
+
+  (define (smooth stream)
+    (stream-map average stream (cons-stream (car-stream stream) stream)))
+
+  (define (zero-crossings input-stream)
+    (stream-map (lambda (a b) (sign-change-detector a b)) (smooth stream) stream))
+#+end_src
+
+** Test 
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+#+end_src
+
+
+* 4. Streams and Delayed Evaluation
+** Test 
+#+name:delayed-integral
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (integral delayed-integrand initial-value dt)
+    (define int
+      (cons-stream
+       initial-value
+       (let ((integrand (force delayed-integrand)))
+         (add-streams (scale-stream integrand dt) int))))
+    int)
+#+end_src
+
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<stream>>
+  <<square>>
+  <<delayed-integral>>
+
+  (define (solve f y0 dt)
+    (define y (integral (delay dy) y0 dt))
+    (define dy (stream-map f y))
+    y)
+
+  (stream-ref (solve (lambda (y) y)
+                     1
+                     0.001)
+              1000)
+#+end_src
+
+** Exercise 3.77
+#+name:delayed-integral2
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (integral delayed-integrand initial-value dt) 
+    (cons-stream initial-value 
+                 (let ((integrand (force delayed-integrand))) 
+                   (if (stream-null? integrand) 
+                       the-empty-stream 
+                       (integral (delay (stream-cdr integrand)) 
+                                 (+ (* dt (stream-car integrand)) 
+                                    initial-value) 
+                                 dt))))) 
+#+end_src
+
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<stream>>
+  <<delayed-integral>>
+
+  (define (solve f y0 dt)
+    (define y (integral (delay (dy)) y0 dt))
+    (define (dy) (stream-map f y))
+    y)
+
+  (stream-ref (solve (lambda (y) y)
+                     1
+                     0.001)
+              1000)
+#+end_src
+
+#+RESULTS:
+: 2.716923932235896
+
+
+** Exercise 3.78 
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<stream>>
+  <<delayed-integral>>
+
+  (define (solve-2nd a b dt y0 dy0)
+    (define y (integral (delay (dy)) y0 dt))
+    (define (dy) (integral (delay (ddy)) dy0 dt))
+    (define (ddy) (add-streams (scale-stream (dy) a)
+                               (scale-stream y b)))
+    y)
+
+  (stream-ref (solve-2nd 1 0 0.0001 1 1) 4000)
+  (stream-ref (solve-2nd 0 -1 0.0001 1 0) 1000)
+  (stream-ref (solve-2nd 0 -1 0.0001 0 1) 1000)
+#+end_src
+
+#+RESULTS:
+: 1.491794863434594
+: 0.9950091403445427
+: 0.09983391548348729
+
+
+** Exercise 3.79 
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<stream>>
+  <<delayed-integral>>
+
+  (define (solve f y0 dt)
+    (define y (integral (delay (dy)) y0 dt))
+    (define (dy) (stream-map f y))
+    y)
+
+  (define (solve-2nd f dt y0 dy0)
+    (define y (integral (delay (dy)) y0 dt))
+    (define (dy) (integral (delay (ddy)) dy0 dt))
+    (define (ddy) (stream-map f (delay (dy)) y))
+    y)
+
+#+end_src
+
+** Exercise 3.80 
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<stream>>
+  <<delayed-integral>>
+
+  (define (RC R C dt)
+    (define (rc-stream i v0)
+      (add-streams (scale-stream i R)
+                   (integral (scale-stream i (/ 1 C)) v0 dt)))
+    rc-stream)
+
+  (define (RLC R L C dt)
+    (define (rlc-stream vc0 il0)
+      (cons-stream (delay (vc))
+                   (delay (il))))
+
+    (define (ic) (scale-stream (delay (dvc)) C))
+    (define (il) (scale-stream (delay (ic)) -1))
+    (define (ir) (scale-stream (delay (ic)) -1))
+    (define (vr) (scale-stream (delay (ir)) R))
+    (define (vl) (scale-stream (delay (dil)) L))
+    (define (vc) (add-streams (delay (vr)) (delay (vl))))
+
+    (define (dvc) (scale-stream (delay (il)) (- (/ 1 C))))
+    (define (dil) (add-streams (scale-stream (delay (vc)) (/ 1 L))
+                              (scale-stream (delay (il)) (- (/ R L))))) rlc-stream)
+
+  (define rlc-1 ((RLC 1 0.2 1 0.001) 10 0))
+  (car rlc-1)
+  (cdr rlc-1)
+#+end_src
+
+#+RESULTS:
+: #<promise>
+: #<promise>
+
+
+** Exercise 3.80 
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<stream>>
+  <<delayed-integral>>
+
+  (define (RC R C dt)
+    (define (rc-stream i v0)
+      (add-streams (scale-stream i R)
+                   (integral (scale-stream i (/ 1 C)) v0 dt)))
+    rc-stream)
+
+  (define (RLC R L C dt)
+    (define (rlc-stream vc0 il0)
+      (cons-stream (integral (delay (dvc)) vc0 dt)
+                   (integral (delay (dil)) il0 dt)))
+    (define (dil) (add-streams (scale-stream (stream-car rlc-stream)
+                                             (/ 1 L))
+                               (scale-stream (stream-cdr rlc-stream)
+                                             (- (/ R L)))))
+    (define (dvc) (scale-stream (stream-cdr rlc-stream) (- (/ 1 C))))
+    rlc-stream)
+
+  (define rlc-1 ((RLC 1 0.2 1 0.001) 10 0))
+  (car rlc-1)
+  (cdr rlc-1)
+  (stream-ref (stream-cdr rlc-1) 1)
+#+end_src
+
+#+RESULTS:
+#+begin_example
+mcar: contract violation
+  expected: mpair?
+  given: #<procedure:...rg-babel-aJbKta.rkt:68:2>
+  context...:
+   /Applications/Racket v8.7/share/pkgs/r5rs-lib/r5rs/main.rkt:311:2: r5rs:force
+   /Applications/Racket v8.7/share/pkgs/r5rs-lib/r5rs/main.rkt:307:37
+   /Applications/Racket v8.7/share/pkgs/r5rs-lib/r5rs/main.rkt:311:2: r5rs:force
+   /var/folders/_3/nwly65x92d13qp765t5gqbl40000gn/T/babel-LPQz4J/org-babel-aJbKta.rkt:27:0: stream-ref
+   body of "/var/folders/_3/nwly65x92d13qp765t5gqbl40000gn/T/babel-LPQz4J/org-babel-aJbKta.rkt"
+(10 . #<promise>)
+#<promise>
+#+end_example
+
+
+** Test 
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+#+end_src
+
+
+* 5. Modularity of Functional Programs
+** Exercise 3.81 
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (random-numbers requests)
+    (cons-stream
+     random-init
+     (stream-map (lambda (num request) (cond ((eq? request 'generate) (rand-update num))
+                                        ((eq? (car request) 'reset) (cdr request))))
+                 random-numbers
+                 requests)))
+#+end_src
+
+** Exercise 3.82
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (monte-carlo experiment-stream passed failed)
+    (define (next passed failed)
+      (cons-stream
+       (/ passed (+ passed failed))
+       (monte-carlo
+        (stream-cdr experiment-stream) passed failed)))
+    (if (stream-car experiment-stream)
+        (next (+ passed 1) failed)
+        (next passed (+ failed 1))))
+
+  (define (monte-integration pred x1 x2 y1 y2)
+    (map-successive-pairs
+     (lambda (r1 r2) ((pred x1 x2 y1 y2) r1 r2))
+     random-numbers))
+
+  (define (estimate-integral pred x1 x2 y1 y2)
+    (monte-carlo (monte-integration pred x1 x2 y1 y2) 0 0))
+#+end_src
+
+** Test 
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+#+end_src
+
+
+* test
+** Test 
+#+name:factor-pairs
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (factor-pairs n) (stream-map (lambda (a) (cons a (quotient n a)))
+                                       (stream-filter (lambda (x) (zero? (remainder n x)))
+                                                      (integers<= (sqrt n)))))
+#+end_src
+
+#+name:sum-pairs
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  (define (sum-pairs n) (stream-map (lambda (a) (cons a (- n a))) (integers<= (/ n 2))))
+#+end_src
+
+** Test 
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+  <<stream>>
+  <<integers>>
+  <<factor-pairs>>
+  <<sum-pairs>>
+  (define (peter-pairs n) (stream-filter (lambda (pair) (>= (car pair) 2)) (factor-pairs n)))
+  (define (alice-pairs n) (stream-filter (lambda (pair) (>= (car pair) 2)) (sum-pairs n)))
+  (define (can-peter-know-pair? number-peter-knows) (< (length-stream (peter-pairs number-peter-knows)) 2))
+  (define (can-alice-know-pair? number-alice-knows) (< (length-stream (alice-pairs number-alice-knows)) 2))
+  (define (sum-pair p) (+ (car p) (cdr p)))
+
+  (define (know? who bool)
+    (cond ((eq? who 'peter) (lambda (num) ((if (eq? bool 'yes) < >=) (length-stream (peter-pairs num)) 2)))
+          ((eq? who 'alice) (lambda (num) ((if (eq? bool 'yes) < >=) (length-stream (alice-pairs num)) 2)))))
+
+  ;; (define a (stream-filter (know? 'peter 'no) (integers>= 4)))
+  ;; (stream-ref a 0)
+
+  (define b (stream-filter (know? 'alice 'yes)
+                           (stream-filter (know? 'peter 'yes)
+                                          (stream-filter (know? 'alice 'no)
+                                                         (stream-filter (know? 'peter 'no)
+                                                                        (integers>= 4))))))
+#+end_src
+
+#+RESULTS:
+: /var/folders/_3/nwly65x92d13qp765t5gqbl40000gn/T/babel-QYETSX/org-babel-4XCidc.rkt:78:16: know: unbound identifier
+:   in: know
+:   location...:
+:    /var/folders/_3/nwly65x92d13qp765t5gqbl40000gn/T/babel-QYETSX/org-babel-4XCidc.rkt:78:16
+
+
+
+** Test 
+#+begin_src racket :lang sicp :results output :noweb yes :noweb-ref yes
+#+end_src
